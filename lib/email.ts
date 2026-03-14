@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 
 const EVENT_NAME = "Robotics Challenge 2026";
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://entry-ease-uh3d.vercel.app/";
 
 /**
  * Builds a Nodemailer transporter from environment variables.
