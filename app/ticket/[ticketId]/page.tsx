@@ -294,7 +294,6 @@ export default function TicketPage() {
           </div>
         </main>
       </div>
-    </>
   );
 }
 
