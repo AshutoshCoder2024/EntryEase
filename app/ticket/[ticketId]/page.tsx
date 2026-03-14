@@ -21,6 +21,7 @@ export default function TicketPage() {
   const [ticket, setTicket] = useState<TicketRow | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showQr, setShowQr] = useState(true);
   const qrRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -71,7 +72,7 @@ export default function TicketPage() {
           errorCorrectionLevel: 'H'
         });
 
-        qrRef.current!.innerHTML = `<img src="${qrDataUrl}" alt="QR Code" style="width: 100%; height: auto; max-width: 256px;" />`;
+        qrRef.current!.innerHTML = `<img src="${qrDataUrl}" alt="QR Code" style="width: 100%; height: auto; max-width: 280px;" />`;
       } catch (err) {
         console.error('QR generation failed:', err);
         qrRef.current!.innerHTML = '<p class="text-red-400">Failed to generate QR code</p>';
@@ -142,158 +143,177 @@ export default function TicketPage() {
       ? "Checked in"
       : "Payment confirmed · Not checked-in";
 
-  return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50">
-        <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/60 backdrop-blur">
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-dashed border-slate-600 bg-slate-900/80 text-[9px] text-slate-400">
-              College
-              <br />
-              Logo
-            </div>
-            <div className="flex-1 text-center">
-              <h1 className="text-sm font-semibold tracking-wide sm:text-base">
-                Robotics Challenge 2026 · Digital Pass
-              </h1>
-              <p className="mt-0.5 text-[11px] text-slate-400">
-                Show this QR ticket at the entrance
-              </p>
-            </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-dashed border-slate-600 bg-slate-900/80 text-[9px] text-slate-400">
-              Club
-              <br />
-              Logo
-            </div>
-          </div>
-        </header>
+  const paymentStatusLabel = ticket ? (ticket.entry_status === "used" ? "Checked in" : "Valid · Not checked in") : "";
 
-        <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
-          <div
-            id="ticket-card"
-            className="w-full max-w-xl rounded-3xl border border-slate-800 bg-slate-900/80 p-5 shadow-2xl shadow-slate-950/80"
-          >
+  return (
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950/20 text-slate-50">
+      <header className="sticky top-0 z-30 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[10px] font-medium text-slate-400">
+            Logo
+          </div>
+          <div className="flex-1 text-center">
+            <h1 className="text-base font-semibold tracking-tight text-white sm:text-lg">
+              Robotics Challenge 2026 · Digital Pass
+            </h1>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Show this QR ticket at the entrance
+            </p>
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[10px] font-medium text-slate-400">
+            Club
+          </div>
+        </div>
+      </header>
+
+      <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+        <div className="w-full max-w-xl">
+          <div className="rounded-3xl border border-white/10 bg-slate-900/40 p-6 shadow-soft-lg backdrop-blur-xl sm:p-8">
             {loading && (
-              <p className="text-center text-sm text-slate-400">
-                Loading your ticket...
-              </p>
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500/30 border-t-indigo-400" />
+                <p className="mt-4 text-sm text-slate-400">Loading your ticket...</p>
+              </div>
             )}
             {error && !loading && (
-              <p className="text-center text-sm text-rose-400">{error}</p>
+              <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 py-8 text-center">
+                <p className="text-sm font-medium text-rose-300">{error}</p>
+              </div>
             )}
             {ticket && !loading && !error && (
               <div className="space-y-6">
-                <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-                      Robotics Challenge 2026
-                    </p>
-                    <h2 className="mt-1 text-lg font-semibold text-slate-50">
-                      {ROBOTICS_EVENT_NAME}
-                    </h2>
-                    <p className="mt-1 text-[11px] text-slate-400">
-                      Venue: Main Auditorium · Reporting 30 mins before start
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                      Ticket ID
-                    </p>
-                    <p className="mt-1 rounded-full bg-slate-800 px-3 py-1 text-xs font-mono text-slate-100">
-                      {ticket.ticket_id}
-                    </p>
-                  </div>
-                </div>
+                {/* Ticket info card */}
+                <div className="rounded-2xl border border-white/10 bg-slate-800/40 p-4 sm:p-5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Event
+                  </p>
+                  <h2 className="mt-1 text-lg font-semibold text-white">
+                    {ROBOTICS_EVENT_NAME}
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Venue: Main Auditorium · Reporting 30 mins before start
+                  </p>
 
-                <div className="grid gap-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-                  <div className="space-y-3">
+                  <div className="mt-4 grid gap-4 border-t border-slate-700/50 pt-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
                         Ticket Holder
                       </p>
-                      <p className="mt-1 text-base font-semibold text-slate-50">
+                      <p className="mt-1 text-base font-semibold text-slate-100">
                         {ticket.name}
                       </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wide text-slate-500">
-                          Email
-                        </p>
-                        <p className="mt-0.5 break-all text-slate-200">
-                          {ticket.email || "-"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wide text-slate-500">
-                          Phone
-                        </p>
-                        <p className="mt-0.5 text-slate-200">
-                          {ticket.phone || "-"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wide text-slate-500">
-                          Department
-                        </p>
-                        <p className="mt-0.5 text-slate-200">
-                          {ticket.department || "-"}
-                        </p>
-                      </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                        Ticket ID
+                      </p>
+                      <p className="mt-1 font-mono text-sm text-indigo-300">
+                        {ticket.ticket_id}
+                      </p>
                     </div>
-                    <div
-                      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-medium ${
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                        Email
+                      </p>
+                      <p className="mt-1 truncate text-sm text-slate-300">
+                        {ticket.email || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                        Payment Status
+                      </p>
+                      <p className="mt-1 text-sm text-slate-300">
+                        {paymentStatusLabel}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${
                         ticket.entry_status === "used"
-                          ? "border-sky-500/40 bg-sky-500/10 text-sky-200"
-                          : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                          ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
+                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                       }`}
                     >
                       <span
-                        className={`h-1.5 w-1.5 rounded-full ${
+                        className={`h-2 w-2 rounded-full ${
                           ticket.entry_status === "used"
                             ? "bg-sky-400"
                             : "bg-emerald-400"
                         }`}
                       />
                       {statusLabel}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center justify-center gap-3">
-                    <div
-                      ref={qrRef}
-                      className="flex h-40 w-40 items-center justify-center rounded-2xl bg-slate-900 shadow-inner shadow-slate-950/80"
-                    />
-                    <p className="text-center text-[11px] text-slate-400">
-                      Keep brightness high and avoid screen cracks for faster
-                      scanning.
-                    </p>
+                    </span>
                   </div>
                 </div>
 
-                <div className="mt-2 flex flex-col gap-2 border-t border-dashed border-slate-800 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex gap-2">
+                {/* QR section: show or blurred placeholder */}
+                <div className="rounded-2xl border border-white/10 bg-slate-800/40 p-4 sm:p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      QR Code
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowQr(!showQr)}
+                      className="rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-600/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    >
+                      {showQr ? "Hide QR Code" : "Show QR Code"}
+                    </button>
+                  </div>
+
+                  {showQr ? (
+                    <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-white p-6 shadow-soft">
+                      <div
+                        ref={qrRef}
+                        className="flex min-h-[200px] w-full max-w-[280px] items-center justify-center"
+                      />
+                      <p className="mt-4 text-center text-xs text-slate-500">
+                        Keep brightness high for faster scanning.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-slate-800/80 py-16">
+                      <div className="flex h-32 w-32 items-center justify-center rounded-2xl bg-slate-700/50 blur-md">
+                        <div className="h-24 w-24 rounded-xl bg-slate-600/80" />
+                      </div>
+                      <p className="mt-4 text-sm text-slate-500">
+                        QR code hidden
+                      </p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        Tap &quot;Show QR Code&quot; when at the entrance
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Download actions */}
+                <div className="flex flex-col gap-3 border-t border-slate-700/50 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={downloadAsPng}
-                      className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-slate-50 shadow-md shadow-blue-900/40 transition hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+                      className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-indigo-900/20 transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-900"
                     >
                       Download Ticket (PNG)
                     </button>
                     <button
                       onClick={downloadAsSvg}
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-100 shadow-md shadow-slate-950/40 transition hover:border-blue-500 hover:text-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+                      className="inline-flex items-center justify-center rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-xs font-semibold text-slate-200 transition hover:border-indigo-500/50 hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                     >
                       Download QR (SVG)
                     </button>
                   </div>
-                  <p className="mt-2 text-[11px] text-slate-500 sm:mt-0">
-                    Tip: Add this page to your home screen for quick access.
+                  <p className="text-xs text-slate-500 sm:text-right">
+                    Add this page to your home screen for quick access.
                   </p>
                 </div>
               </div>
             )}
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
+    </div>
   );
 }
-

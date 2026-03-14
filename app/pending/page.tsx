@@ -4,15 +4,15 @@ import Link from "next/link";
 
 export default function PendingPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 px-4 text-slate-100">
-      <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/80 p-8 text-center shadow-2xl">
-        <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/20 text-2xl">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950/20 px-4 py-8">
+      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900/40 p-8 text-center shadow-soft-lg backdrop-blur-xl">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/10 text-3xl">
           ⏳
         </div>
-        <h1 className="text-xl font-semibold text-slate-50">
+        <h1 className="mt-6 text-xl font-semibold tracking-tight text-white">
           Waiting for Payment Verification
         </h1>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-3 text-sm leading-relaxed text-slate-400">
           Your registration has been submitted. Our team will verify your UTR
           and payment. Once verified, your QR ticket will be sent to your email.
         </p>
@@ -22,7 +22,7 @@ export default function PendingPage() {
         </p>
         <Link
           href="/"
-          className="mt-6 inline-block rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+          className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-900"
         >
           Back to Home
         </Link>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
+import Link from "next/link";
 import { ROBOTICS_EVENT_NAME, supabase } from "@/lib/supabaseClient";
 
 type ScanVariant = "info" | "success" | "warning" | "error";
@@ -23,6 +24,36 @@ type Registration = {
   created_at: string;
   verified_at?: string | null;
 };
+
+const IconGrid = () => (
+  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+  </svg>
+);
+
+const IconQR = () => (
+  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+  </svg>
+);
+
+const IconUsers = () => (
+  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+  </svg>
+);
+
+const IconCheck = () => (
+  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const IconHome = () => (
+  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+  </svg>
+);
 
 export default function AdminPage() {
   const router = useRouter();
@@ -48,7 +79,6 @@ export default function AdminPage() {
     detailHtml: "",
   });
 
-  // Simple client-side password gate using localStorage flag set by /admin/login
   useEffect(() => {
     if (typeof window === "undefined") return;
     const ok = window.localStorage.getItem("admin-authed") === "true";
@@ -258,12 +288,12 @@ export default function AdminPage() {
 
   const scanClasses =
     scanStatus.variant === "success"
-      ? "border-emerald-500/40 bg-emerald-500/5"
+      ? "border-emerald-500/30 bg-emerald-500/10"
       : scanStatus.variant === "error"
-        ? "border-rose-500/40 bg-rose-500/5"
+        ? "border-rose-500/30 bg-rose-500/10"
         : scanStatus.variant === "warning"
-          ? "border-amber-500/40 bg-amber-500/5"
-          : "border-slate-800 bg-slate-950/80";
+          ? "border-amber-500/30 bg-amber-500/10"
+          : "border-white/10 bg-slate-800/40";
 
   if (!authChecked) {
     return null;
@@ -276,167 +306,216 @@ export default function AdminPage() {
         strategy="afterInteractive"
       />
 
-      <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50">
-        <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/60 backdrop-blur">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-            <h1 className="text-base font-semibold sm:text-lg">
-              {ROBOTICS_EVENT_NAME} · Admin Dashboard
-            </h1>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => router.push("/admin/scan")}
-                className="hidden rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-blue-900/40 transition hover:bg-blue-500 sm:inline-flex"
-              >
-                Scan QR Ticket
-              </button>
-              <a
-                href="/"
-                className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800"
-              >
-                ← Registration
-              </a>
-            </div>
+      <div className="flex min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950/20 text-slate-50">
+        {/* Sidebar */}
+        <aside className="fixed inset-y-0 left-0 z-20 hidden w-56 flex-col border-r border-white/5 bg-slate-950/90 backdrop-blur-xl lg:flex">
+          <div className="flex h-14 items-center border-b border-white/5 px-4">
+            <span className="text-sm font-semibold text-white">{ROBOTICS_EVENT_NAME}</span>
           </div>
-        </header>
+          <nav className="flex-1 space-y-0.5 p-3">
+            <Link
+              href="/admin"
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white bg-white/10"
+            >
+              <IconGrid />
+              Dashboard
+            </Link>
+            <Link
+              href="/admin/scan"
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-slate-200"
+            >
+              <IconQR />
+              Scan QR
+            </Link>
+            <a
+              href="/"
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-slate-200"
+            >
+              <IconHome />
+              Registration
+            </a>
+          </nav>
+        </aside>
 
-        <main className="flex-1 overflow-auto px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl space-y-6">
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">Total</p>
-                <p className="mt-1 text-2xl font-semibold text-slate-100">{stats.total}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-800 bg-amber-500/10 p-3">
-                <p className="text-[11px] uppercase tracking-wide text-amber-400/80">Pending</p>
-                <p className="mt-1 text-2xl font-semibold text-amber-300">{stats.pending}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-800 bg-emerald-500/10 p-3">
-                <p className="text-[11px] uppercase tracking-wide text-emerald-400/80">Verified</p>
-                <p className="mt-1 text-2xl font-semibold text-emerald-300">{stats.verified}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-800 bg-sky-500/10 p-3">
-                <p className="text-[11px] uppercase tracking-wide text-sky-400/80">Checked-in</p>
-                <p className="mt-1 text-2xl font-semibold text-sky-300">{stats.checked}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">Remaining</p>
-                <p className="mt-1 text-2xl font-semibold text-slate-200">{stats.remaining}</p>
-              </div>
-            </div>
-
-            {/* Filters */}
-            <div className="flex gap-2">
-              {(["all", "pending", "verified"] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition ${
-                    filter === f
-                      ? "bg-blue-600 text-white"
-                      : "border border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                  }`}
+        <div className="flex flex-1 flex-col lg:pl-56">
+          <header className="sticky top-0 z-10 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+              <h1 className="text-lg font-semibold tracking-tight text-white">
+                Admin Dashboard
+              </h1>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/admin/scan"
+                  className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-indigo-900/20 transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-900"
                 >
-                  {f}
-                </button>
-              ))}
-            </div>
-
-            {/* Data table */}
-            <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/70">
-              <table className="w-full min-w-[800px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-800 bg-slate-900/90">
-                    <th className="px-4 py-3 font-medium text-slate-300">Name</th>
-                    <th className="px-4 py-3 font-medium text-slate-300">Email</th>
-                    <th className="px-4 py-3 font-medium text-slate-300">Phone</th>
-                    <th className="px-4 py-3 font-medium text-slate-300">Dept</th>
-                    <th className="px-4 py-3 font-medium text-slate-300">UTR</th>
-                    <th className="px-4 py-3 font-medium text-slate-300">Status</th>
-                    <th className="px-4 py-3 font-medium text-slate-300">Ticket</th>
-                    <th className="px-4 py-3 font-medium text-slate-300">Entry</th>
-                    <th className="px-4 py-3 font-medium text-slate-300">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((r) => (
-                    <tr key={r.id} className="border-b border-slate-800/80 hover:bg-slate-800/30">
-                      <td className="px-4 py-3 font-medium text-slate-100">{r.name}</td>
-                      <td className="max-w-[140px] truncate px-4 py-3 text-slate-300" title={r.email}>
-                        {r.email}
-                      </td>
-                      <td className="px-4 py-3 text-slate-300">{r.phone}</td>
-                      <td className="px-4 py-3 text-slate-400">{r.department ?? "—"}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-slate-400">
-                        {r.utr_number ?? "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                            r.payment_status === "verified"
-                              ? "bg-emerald-500/20 text-emerald-300"
-                              : r.payment_status === "rejected"
-                                ? "bg-rose-500/20 text-rose-300"
-                                : "bg-amber-500/20 text-amber-300"
-                          }`}
-                        >
-                          {r.payment_status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-slate-400">
-                        {r.ticket_id ?? "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        {r.entry_status === "used" ? (
-                          <span className="text-xs text-sky-400">Used</span>
-                        ) : (
-                          <span className="text-xs text-slate-500">Not used</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {r.payment_status === "pending" && (
-                          <button
-                            onClick={() => handleVerify(r.id)}
-                            disabled={verifyingId === r.id}
-                            className="rounded-lg bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
-                          >
-                            {verifyingId === r.id ? "Verifying..." : "Verify"}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {filtered.length === 0 && (
-                <p className="px-4 py-8 text-center text-sm text-slate-500">
-                  No registrations yet.
-                </p>
-              )}
-            </div>
-
-            {/* QR Scanner */}
-            <section className="rounded-3xl border border-slate-800 bg-slate-900/70 p-4 sm:p-6">
-              <h2 className="mb-4 text-sm font-semibold text-slate-100">
-                QR Ticket Scanner (Event Entry)
-              </h2>
-              <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/60">
-                <div id="qr-reader" className="w-full" />
+                  <IconQR />
+                  Scan QR Ticket
+                </Link>
+                <a
+                  href="/"
+                  className="rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                >
+                  ← Registration
+                </a>
               </div>
-              <div
-                className={`mt-4 rounded-2xl border bg-slate-950/80 p-3 text-xs ${scanClasses}`}
-              >
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">Scan Status</p>
-                <p className="mt-1 text-sm text-slate-300">{scanStatus.message}</p>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl space-y-6">
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-4 shadow-soft backdrop-blur-sm">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <IconUsers />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Total</span>
+                  </div>
+                  <p className="mt-2 text-2xl font-semibold text-white">{stats.total}</p>
+                </div>
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 shadow-soft">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-amber-400/90">Pending</span>
+                  <p className="mt-2 text-2xl font-semibold text-amber-300">{stats.pending}</p>
+                </div>
+                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 shadow-soft">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400/90">Verified</span>
+                  <p className="mt-2 text-2xl font-semibold text-emerald-300">{stats.verified}</p>
+                </div>
+                <div className="rounded-2xl border border-sky-500/20 bg-sky-500/10 p-4 shadow-soft">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-sky-400/90">Checked-in</span>
+                  <p className="mt-2 text-2xl font-semibold text-sky-300">{stats.checked}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-4 shadow-soft">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Remaining</span>
+                  <p className="mt-2 text-2xl font-semibold text-slate-200">{stats.remaining}</p>
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="flex flex-wrap gap-2">
+                {(["all", "pending", "verified"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`rounded-xl px-4 py-2 text-sm font-medium capitalize transition focus:outline-none focus:ring-2 focus:ring-indigo-500/30 ${
+                      filter === f
+                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-900/20"
+                        : "border border-slate-600 bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+
+              {/* Data table */}
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/40 shadow-soft backdrop-blur-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[800px] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-slate-800/50">
+                        <th className="px-4 py-3.5 font-semibold text-slate-400">Name</th>
+                        <th className="px-4 py-3.5 font-semibold text-slate-400">Email</th>
+                        <th className="px-4 py-3.5 font-semibold text-slate-400">Phone</th>
+                        <th className="px-4 py-3.5 font-semibold text-slate-400">Dept</th>
+                        <th className="px-4 py-3.5 font-semibold text-slate-400">UTR</th>
+                        <th className="px-4 py-3.5 font-semibold text-slate-400">Status</th>
+                        <th className="px-4 py-3.5 font-semibold text-slate-400">Ticket</th>
+                        <th className="px-4 py-3.5 font-semibold text-slate-400">Entry</th>
+                        <th className="px-4 py-3.5 font-semibold text-slate-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((r) => (
+                        <tr key={r.id} className="border-b border-white/5 transition hover:bg-white/5">
+                          <td className="px-4 py-3.5 font-medium text-slate-100">{r.name}</td>
+                          <td className="max-w-[140px] truncate px-4 py-3.5 text-slate-400" title={r.email}>
+                            {r.email}
+                          </td>
+                          <td className="px-4 py-3.5 text-slate-400">{r.phone}</td>
+                          <td className="px-4 py-3.5 text-slate-400">{r.department ?? "—"}</td>
+                          <td className="px-4 py-3.5 font-mono text-xs text-slate-500">
+                            {r.utr_number ?? "—"}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <span
+                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                                r.payment_status === "verified"
+                                  ? "bg-emerald-500/20 text-emerald-300"
+                                  : r.payment_status === "rejected"
+                                    ? "bg-rose-500/20 text-rose-300"
+                                    : "bg-amber-500/20 text-amber-300"
+                              }`}
+                            >
+                              {r.payment_status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5 font-mono text-xs text-slate-500">
+                            {r.ticket_id ?? "—"}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            {r.entry_status === "used" ? (
+                              <span className="inline-flex items-center gap-1 text-xs text-sky-400">
+                                <IconCheck />
+                                Used
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-500">Not used</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            {r.payment_status === "pending" && (
+                              <button
+                                onClick={() => handleVerify(r.id)}
+                                disabled={verifyingId === r.id}
+                                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-medium text-white shadow-md transition hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50"
+                              >
+                                {verifyingId === r.id ? (
+                                  <>
+                                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                                    Verifying...
+                                  </>
+                                ) : (
+                                  "Verify"
+                                )}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {filtered.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <IconUsers className="h-10 w-10 text-slate-600" />
+                    <p className="mt-3 text-sm text-slate-500">No registrations yet.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* QR Scanner */}
+              <section className="rounded-3xl border border-white/10 bg-slate-900/40 p-5 shadow-soft-lg backdrop-blur-xl sm:p-6">
+                <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+                  <IconQR />
+                  QR Ticket Scanner (Event Entry)
+                </h2>
+                <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/80">
+                  <div id="qr-reader" className="w-full" />
+                </div>
                 <div
-                  className="mt-2 text-[11px] text-slate-400"
-                  dangerouslySetInnerHTML={{ __html: scanStatus.detailHtml }}
-                />
-              </div>
-            </section>
-          </div>
-        </main>
+                  className={`mt-4 rounded-2xl border p-4 ${scanClasses}`}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Scan Status</p>
+                  <p className="mt-2 text-sm font-medium text-slate-200">{scanStatus.message}</p>
+                  <div
+                    className="mt-2 text-xs text-slate-400"
+                    dangerouslySetInnerHTML={{ __html: scanStatus.detailHtml }}
+                  />
+                </div>
+              </section>
+            </div>
+          </main>
+        </div>
       </div>
     </>
   );

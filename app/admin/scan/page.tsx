@@ -203,65 +203,68 @@ export default function AdminScanPage() {
 
   const scanClasses =
     scanStatus.variant === "success"
-      ? "border-emerald-500/40 bg-emerald-500/5"
+      ? "border-emerald-500/30 bg-emerald-500/10"
       : scanStatus.variant === "error"
-        ? "border-rose-500/40 bg-rose-500/5"
+        ? "border-rose-500/30 bg-rose-500/10"
         : scanStatus.variant === "warning"
-          ? "border-amber-500/40 bg-amber-500/5"
-          : "border-slate-800 bg-slate-950/80";
+          ? "border-amber-500/30 bg-amber-500/10"
+          : "border-white/10 bg-slate-800/40";
 
   if (!authChecked) {
     return null;
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
-      <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3">
-          <h1 className="text-sm font-semibold sm:text-base">
-            {ROBOTICS_EVENT_NAME} · QR Ticket Scanner
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950/20 text-slate-50">
+      <header className="sticky top-0 z-30 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+          <h1 className="text-base font-semibold tracking-tight text-white sm:text-lg">
+            {ROBOTICS_EVENT_NAME} · Scanner
           </h1>
           <button
             type="button"
             onClick={() => router.push("/admin")}
-            className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800"
+            className="rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
           >
-            ← Back to Dashboard
+            ← Dashboard
           </button>
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col items-center justify-center px-4 py-6">
-        <div className="w-full max-w-md space-y-4">
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 shadow-2xl shadow-slate-950/80">
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  Scan QR Ticket
-                </p>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  Hold the QR code inside the box. Works on mobile and desktop.
-                </p>
-              </div>
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6">
+        <div className="w-full max-w-md space-y-5">
+          <div className="rounded-3xl border border-white/10 bg-slate-900/40 p-5 shadow-soft-lg backdrop-blur-xl sm:p-6">
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                QR Ticket Scanner
+              </p>
+              <p className="mt-1 text-sm text-slate-400">
+                Hold the ticket QR inside the frame. Works on mobile and desktop.
+              </p>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/80">
-              {/* Scanner div always in DOM so restart works after Scan Again */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/80">
               <div
                 id="qr-reader-full"
-                className={`aspect-square w-full ${phase === "result" ? "hidden" : ""}`}
+                className={`aspect-square w-full min-h-[280px] ${phase === "result" ? "hidden" : ""}`}
               />
               {phase === "processing" && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-slate-950/95">
-                  <p className="text-sm font-medium text-slate-300">
-                    Processing Ticket…
-                  </p>
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-9 w-9 animate-spin rounded-full border-2 border-indigo-500/30 border-t-indigo-400" />
+                    <p className="text-sm font-medium text-slate-300">
+                      Processing Ticket…
+                    </p>
+                  </div>
                 </div>
               )}
               {phase === "result" && (
-                <div className="flex min-h-[260px] flex-col items-center justify-center py-8">
-                  <p className="text-[11px] text-slate-500">
-                    Camera off. Click &quot;Scan Again&quot; to verify another ticket.
+                <div className="flex min-h-[280px] flex-col items-center justify-center py-10">
+                  <p className="text-sm text-slate-500">
+                    Camera off
+                  </p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    Tap &quot;Scan Again&quot; to verify another ticket
                   </p>
                 </div>
               )}
@@ -269,17 +272,17 @@ export default function AdminScanPage() {
           </div>
 
           <div
-            className={`rounded-2xl border bg-slate-950/80 p-3 text-xs ${scanClasses}`}
+            className={`rounded-2xl border p-4 transition ${scanClasses}`}
           >
-            <p className="text-[11px] uppercase tracking-wide text-slate-500">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               {phase === "result" ? "Result" : "Status"}
             </p>
-            <p className="mt-1 text-sm font-medium text-slate-300">
+            <p className="mt-2 text-sm font-medium text-slate-200">
               {scanStatus.message}
             </p>
             {scanStatus.detailHtml && (
               <div
-                className="mt-2 text-[11px] text-slate-400"
+                className="mt-2 text-xs text-slate-400"
                 dangerouslySetInnerHTML={{ __html: scanStatus.detailHtml }}
               />
             )}
@@ -289,7 +292,7 @@ export default function AdminScanPage() {
             <button
               type="button"
               onClick={handleScanAgain}
-              className="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-100 shadow-lg transition hover:border-slate-500 hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+              className="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-3.5 text-sm font-semibold text-slate-100 shadow-soft transition hover:border-indigo-500/50 hover:bg-slate-700/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
             >
               Scan Again
             </button>

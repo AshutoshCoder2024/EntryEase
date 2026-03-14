@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import {
   ROBOTICS_EVENT_CAPACITY,
   ROBOTICS_EVENT_NAME,
@@ -130,10 +129,10 @@ export default function Home() {
 
   const statusClasses =
     status?.variant === "success"
-      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
       : status?.variant === "error"
-        ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
-        : "border-sky-500/40 bg-sky-500/10 text-sky-200";
+        ? "border-rose-500/30 bg-rose-500/10 text-rose-200"
+        : "border-indigo-500/30 bg-indigo-500/10 text-indigo-200";
 
   const seatsLabel =
     remainingSeats === null
@@ -143,37 +142,37 @@ export default function Home() {
         : `${remainingSeats} of ${ROBOTICS_EVENT_CAPACITY} seats remaining`;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-100">
-      <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/60 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-slate-600 bg-slate-900/80 text-[10px] text-slate-400">
-            College Logo
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950/20 text-slate-100">
+      <header className="sticky top-0 z-30 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[10px] font-medium text-slate-400">
+            Logo
           </div>
           <div className="flex-1 text-center">
-            <h1 className="text-base font-semibold tracking-wide sm:text-lg md:text-xl">
-              Robotics Challenge 2026 Registration
+            <h1 className="text-lg font-semibold tracking-tight text-white sm:text-xl md:text-2xl">
+              {ROBOTICS_EVENT_NAME}
             </h1>
-            <p className="mt-0.5 text-xs text-slate-400 sm:text-sm">
+            <p className="mt-1 text-xs text-slate-400 sm:text-sm">
               Pay via UPI &amp; enter UTR · Ticket sent to your email after verification
             </p>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-dashed border-slate-600 bg-slate-900/80 text-[10px] text-slate-400">
-            Club Logo
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[10px] font-medium text-slate-400">
+            Club
           </div>
         </div>
       </header>
 
       <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 lg:flex-row">
-          <section className="hidden w-full max-w-sm flex-col justify-between rounded-3xl border border-slate-800/80 bg-slate-900/60 p-6 shadow-2xl shadow-slate-950/80 lg:flex">
+          <section className="hidden w-full max-w-sm flex-col justify-between rounded-3xl border border-white/10 bg-slate-900/40 p-6 shadow-soft-lg backdrop-blur-xl lg:flex">
             <div>
-              <h2 className="text-xl font-semibold text-slate-50">
-                Pay via UPI (PhonePe / GPay / Paytm)
+              <h2 className="text-xl font-semibold text-white">
+                Pay via UPI
               </h2>
               <p className="mt-2 text-sm text-slate-400">
                 Scan the QR code or use UPI ID: <strong className="text-slate-200">{UPI_ID}</strong>
               </p>
-              <div className="mt-4 flex justify-center rounded-2xl border border-slate-700 bg-white p-4">
+              <div className="mt-5 flex justify-center rounded-2xl border border-white/10 bg-white p-5 shadow-soft">
                 <img
                   src="/upiqr.png"
                   alt="UPI Payment QR Code"
@@ -190,63 +189,63 @@ export default function Home() {
                   }}
                 />
               </div>
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-4 text-xs text-slate-500">
                 Amount: ₹{REGISTRATION_FEE}. After payment, enter the UTR number in the form.
               </p>
             </div>
           </section>
 
-          <section className="w-full rounded-3xl border border-slate-800/80 bg-slate-900/70 p-5 shadow-2xl shadow-slate-950/80 backdrop-blur-sm sm:p-7 lg:p-8">
-            <div className="mb-6 flex items-center justify-between gap-3">
+          <section className="w-full rounded-3xl border border-white/10 bg-slate-900/40 p-6 shadow-soft-lg backdrop-blur-xl sm:p-7 lg:p-8">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">Event Registration</h2>
-                <p className="mt-1 text-xs text-slate-400 sm:text-sm">
+                <h2 className="text-xl font-semibold text-white sm:text-2xl">Event Registration</h2>
+                <p className="mt-1 text-sm text-slate-400">
                   Fill details, pay ₹{REGISTRATION_FEE} via UPI, then enter UTR below.
                 </p>
               </div>
-              <div className="space-y-1 text-right">
-                <div className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-300">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-300">
                   Fee: ₹{REGISTRATION_FEE}
-                </div>
-                <p className="text-[11px] text-slate-400">{seatsLabel}</p>
+                </span>
+                <p className="text-xs text-slate-500">{seatsLabel}</p>
               </div>
             </div>
 
             <form className="space-y-8" onSubmit={handleSubmit}>
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Personal Information
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-300">
-                      Full Name<span className="text-rose-500">*</span>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                      Full Name <span className="text-rose-400">*</span>
                     </label>
                     <input
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2.5 text-sm text-slate-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40"
+                      className="w-full rounded-xl border border-slate-600/80 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
                       placeholder="Enter your full name"
                     />
-                    {errors.fullName && <p className="mt-1 text-xs text-rose-400">{errors.fullName}</p>}
+                    {errors.fullName && <p className="mt-1.5 text-xs text-rose-400">{errors.fullName}</p>}
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-300">
-                      Email Address<span className="text-rose-500">*</span>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                      Email <span className="text-rose-400">*</span>
                     </label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2.5 text-sm text-slate-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40"
-                      placeholder="you@gmail.com"
+                      className="w-full rounded-xl border border-slate-600/80 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
+                      placeholder="you@example.com"
                     />
-                    {errors.email && <p className="mt-1 text-xs text-rose-400">{errors.email}</p>}
+                    {errors.email && <p className="mt-1.5 text-xs text-rose-400">{errors.email}</p>}
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-300">
-                      Phone Number<span className="text-rose-500">*</span>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                      Phone <span className="text-rose-400">*</span>
                     </label>
                     <input
                       type="tel"
@@ -254,27 +253,25 @@ export default function Home() {
                       maxLength={10}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2.5 text-sm text-slate-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40"
+                      className="w-full rounded-xl border border-slate-600/80 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
                       placeholder="10-digit mobile"
                     />
-                    {errors.phone && <p className="mt-1 text-xs text-rose-400">{errors.phone}</p>}
+                    {errors.phone && <p className="mt-1.5 text-xs text-rose-400">{errors.phone}</p>}
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4 border-t border-slate-800 pt-6">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <div className="space-y-4 border-t border-slate-700/50 pt-6">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Academic Details
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-300">
-                      Department
-                    </label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">Department</label>
                     <select
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2.5 text-sm text-slate-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40"
+                      className="w-full rounded-xl border border-slate-600/80 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
                     >
                       <option value="">Select</option>
                       <option value="BCA">BCA</option>
@@ -285,13 +282,11 @@ export default function Home() {
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-300">
-                      Year
-                    </label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">Year</label>
                     <select
                       value={year}
                       onChange={(e) => setYear(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2.5 text-sm text-slate-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40"
+                      className="w-full rounded-xl border border-slate-600/80 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
                     >
                       <option value="">Select</option>
                       <option value="1st Year">1st Year</option>
@@ -301,81 +296,79 @@ export default function Home() {
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-300">
-                      Roll Number
-                    </label>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-300">Roll Number</label>
                     <input
                       type="text"
                       value={rollNumber}
                       onChange={(e) => setRollNumber(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2.5 text-sm text-slate-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40"
+                      className="w-full rounded-xl border border-slate-600/80 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
                       placeholder="Optional"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4 border-t border-slate-800 pt-6">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <div className="space-y-4 border-t border-slate-700/50 pt-6">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Payment (UPI)
                 </h3>
-                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
-                  <p className="text-xs text-slate-300">
-                    1. Pay ₹{REGISTRATION_FEE} via UPI to <strong>{UPI_ID}</strong> (scan QR on the left).
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
+                  <p className="text-sm text-slate-300">
+                    1. Pay ₹{REGISTRATION_FEE} via UPI to <strong className="text-slate-200">{UPI_ID}</strong> (scan QR on the left).
                   </p>
-                  <p className="mt-2 text-xs text-slate-300">
-                    2. After payment, you&apos;ll get a <strong>UTR / transaction ID</strong>. Enter it below.
+                  <p className="mt-2 text-sm text-slate-300">
+                    2. After payment, you&apos;ll get a <strong className="text-slate-200">UTR / transaction ID</strong>. Enter it below.
                   </p>
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-300">
-                    UTR Number (Transaction ID)<span className="text-rose-500">*</span>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                    UTR Number (Transaction ID) <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={utrNumber}
                     onChange={(e) => setUtrNumber(e.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-2.5 text-sm font-mono text-slate-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40"
+                    className="w-full rounded-xl border border-slate-600/80 bg-slate-800/50 px-4 py-3 text-sm font-mono text-slate-100 placeholder:text-slate-500 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
                     placeholder="e.g. 123456789012"
                   />
                   {errors.utrNumber && (
-                    <p className="mt-1 text-xs text-rose-400">{errors.utrNumber}</p>
+                    <p className="mt-1.5 text-xs text-rose-400">{errors.utrNumber}</p>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-4 border-t border-slate-800 pt-6">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <div className="space-y-4 border-t border-slate-700/50 pt-6">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Terms &amp; Agreement
                 </h3>
-                <div className="space-y-3 text-xs text-slate-300">
-                  <label className="flex items-start gap-2">
+                <div className="space-y-3 text-sm text-slate-300">
+                  <label className="flex cursor-pointer items-start gap-3">
                     <input
                       type="checkbox"
                       checked={agreeInfo}
                       onChange={(e) => setAgreeInfo(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-slate-500 bg-slate-900 text-blue-500 focus:ring-blue-500"
+                      className="mt-0.5 h-4 w-4 rounded border-slate-500 bg-slate-800 text-indigo-500 transition focus:ring-2 focus:ring-indigo-500/30"
                     />
                     <span>I confirm that all the information provided is correct.</span>
                   </label>
-                  <label className="flex items-start gap-2">
+                  <label className="flex cursor-pointer items-start gap-3">
                     <input
                       type="checkbox"
                       checked={agreeRules}
                       onChange={(e) => setAgreeRules(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-slate-500 bg-slate-900 text-blue-500 focus:ring-blue-500"
+                      className="mt-0.5 h-4 w-4 rounded border-slate-500 bg-slate-800 text-indigo-500 transition focus:ring-2 focus:ring-indigo-500/30"
                     />
                     <span>
                       I agree to follow the event rules. The registration fee is non‑refundable.
                     </span>
                   </label>
                 </div>
-                {errors.terms && <p className="mt-1 text-xs text-rose-400">{errors.terms}</p>}
+                {errors.terms && <p className="mt-1.5 text-xs text-rose-400">{errors.terms}</p>}
               </div>
 
-              <div className="space-y-3 border-t border-slate-800 pt-5">
+              <div className="space-y-4 border-t border-slate-700/50 pt-6">
                 {status && (
-                  <div className={`rounded-2xl border px-3 py-2 text-xs ${statusClasses}`}>
+                  <div className={`rounded-xl border px-4 py-3 text-sm ${statusClasses}`}>
                     {status.message}
                   </div>
                 )}
@@ -383,12 +376,12 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading || (remainingSeats !== null && remainingSeats <= 0)}
-                  className="w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-60"
+                  className="w-full rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-900/30 transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {loading ? "Submitting..." : "Submit Registration"}
                 </button>
 
-                <p className="text-[11px] text-slate-500">
+                <p className="text-center text-xs text-slate-500">
                   After admin verifies your UTR, your QR ticket will be sent to your email.
                 </p>
               </div>
@@ -397,7 +390,7 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="border-t border-slate-900/80 bg-slate-950/80 px-4 py-3 text-center text-[11px] text-slate-500">
+      <footer className="border-t border-white/5 bg-slate-950/60 px-4 py-4 text-center text-xs text-slate-500 backdrop-blur-sm">
         Robotics Challenge 2026 · UPI Payment &amp; QR Ticket System
       </footer>
     </div>
