@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode } from "html5-qrcode";
 import { ROBOTICS_EVENT_NAME, supabase } from "@/lib/supabaseClient";
 
 type ScanVariant = "info" | "success" | "warning" | "error";
 
+type ScanPhase = "scanning" | "processing" | "result";
+
 export default function AdminScanPage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
+  const [scannerSession, setScannerSession] = useState(0);
+  const [phase, setPhase] = useState<ScanPhase>("scanning");
   const [scanStatus, setScanStatus] = useState<{
     message: string;
     variant: ScanVariant;
@@ -20,7 +24,8 @@ export default function AdminScanPage() {
     detailHtml: "",
   });
 
-  
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const scanLockRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -33,147 +38,168 @@ export default function AdminScanPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!authChecked) return;
-    if (typeof window === "undefined") return;
+    if (!authChecked || typeof window === "undefined") return;
 
-    const setScan = (params: {
-      message: string;
-      variant: ScanVariant;
-      detailHtml: string;
-    }) => setScanStatus(params);
+    scanLockRef.current = false;
+    setPhase("scanning");
+    setScanStatus({ message: "Scanning…", variant: "info", detailHtml: "" });
 
     let html5QrCode: Html5Qrcode | null = null;
+    html5QrCodeRef.current = null;
 
     const startScanner = async () => {
+      const element = document.getElementById("qr-reader-full");
+      if (!element) return;
+
       html5QrCode = new Html5Qrcode("qr-reader-full");
+      html5QrCodeRef.current = html5QrCode;
       const config = { fps: 10, qrbox: { width: 260, height: 260 } };
 
+      const onScan = (decodedText: string) => {
+        if (scanLockRef.current) return;
+        scanLockRef.current = true;
+
+        setPhase("processing");
+        setScanStatus({
+          message: "Processing Ticket…",
+          variant: "info",
+          detailHtml: "",
+        });
+
+        const processTicket = async () => {
+          try {
+            await html5QrCode?.stop();
+            html5QrCodeRef.current = null;
+          } catch (e) {
+            console.warn("Scanner stop:", e);
+          }
+
+          let ticketId: string | null = null;
+          try {
+            const url = new URL(decodedText);
+            const pathParts = url.pathname.split("/");
+            const ticketIndex = pathParts.indexOf("ticket");
+            if (ticketIndex !== -1 && pathParts[ticketIndex + 1]) {
+              ticketId = decodeURIComponent(pathParts[ticketIndex + 1]);
+            }
+          } catch {
+            ticketId = decodedText.trim();
+          }
+
+          if (!ticketId) {
+            setScanStatus({
+              message: "Invalid Ticket",
+              variant: "error",
+              detailHtml: "QR does not contain a valid ticket URL or ID.",
+            });
+            setPhase("result");
+            return;
+          }
+
+          const { data, error } = await supabase
+            .from("event_registrations")
+            .select("*")
+            .eq("ticket_id", ticketId)
+            .single();
+
+          if (error || !data) {
+            setScanStatus({
+              message: "Invalid Ticket",
+              variant: "error",
+              detailHtml: "No ticket found in the database.",
+            });
+            setPhase("result");
+            return;
+          }
+
+          if (data.payment_status !== "verified") {
+            setScanStatus({
+              message: "Invalid Ticket",
+              variant: "error",
+              detailHtml: `Payment not verified for ticket <span class="font-mono">${ticketId}</span>.`,
+            });
+            setPhase("result");
+            return;
+          }
+
+          if (data.entry_status === "used") {
+            setScanStatus({
+              message: "Ticket Already Used",
+              variant: "warning",
+              detailHtml: `Ticket ID: <span class="font-mono">${ticketId}</span>`,
+            });
+            setPhase("result");
+            return;
+          }
+
+          const { error: updateError } = await supabase
+            .from("event_registrations")
+            .update({ entry_status: "used" })
+            .eq("ticket_id", ticketId);
+
+          if (updateError) {
+            setScanStatus({
+              message: "Invalid Ticket",
+              variant: "error",
+              detailHtml: "Failed to mark checked-in. Please try again.",
+            });
+            setPhase("result");
+            return;
+          }
+
+          setScanStatus({
+            message: "Entry Approved",
+            variant: "success",
+            detailHtml: `Ticket ID: <span class="font-mono">${ticketId}</span><br/>Status: Valid Ticket`,
+          });
+          setPhase("result");
+        };
+
+        processTicket();
+      };
+
       try {
-        // Try to start with rear camera for mobile
         await html5QrCode.start(
           { facingMode: "environment" },
           config,
-          (decodedText: string) => handleScan(decodedText),
+          (decodedText: string) => onScan(decodedText),
           () => {}
         );
       } catch (err) {
         console.warn("Failed to start with rear camera, trying default camera", err);
         try {
-          // Fallback to default camera
           await html5QrCode.start(
             {},
             config,
-            (decodedText: string) => handleScan(decodedText),
+            (decodedText: string) => onScan(decodedText),
             () => {}
           );
         } catch (fallbackErr) {
           console.error("QR scanner failed to start", fallbackErr);
-          setScan({
+          setScanStatus({
             message: "Camera access denied or unavailable",
             variant: "error",
             detailHtml:
               "Please allow camera permission in your browser settings or try another device.",
           });
+          setPhase("result");
         }
-      }
-    };
-
-    const handleScan = async (payload: string) => {
-      try {
-        let ticketId: string | null = null;
-
-        // Try to parse as URL
-        try {
-          const url = new URL(payload);
-          const pathParts = url.pathname.split('/');
-          const ticketIndex = pathParts.indexOf('ticket');
-          if (ticketIndex !== -1 && pathParts[ticketIndex + 1]) {
-            ticketId = decodeURIComponent(pathParts[ticketIndex + 1]);
-          }
-        } catch {
-          // Not a URL, try as direct ticket ID
-          ticketId = payload.trim();
-        }
-
-        if (!ticketId) {
-          setScan({
-            message: "Invalid QR format",
-            variant: "error",
-            detailHtml: "QR does not contain a valid ticket URL or ID.",
-          });
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from("event_registrations")
-          .select("*")
-          .eq("ticket_id", ticketId)
-          .single();
-
-        if (error || !data) {
-          setScan({
-            message: "Invalid Ticket",
-            variant: "error",
-            detailHtml: `No ticket found with ID <span class="font-mono">${ticketId}</span>.`,
-          });
-          return;
-        }
-
-        if (data.payment_status !== "verified") {
-          setScan({
-            message: "Payment not verified",
-            variant: "warning",
-            detailHtml: `Ticket for <span class="font-semibold">${data.name}</span> — payment status: <span class="font-mono">${data.payment_status}</span>.`,
-          });
-          return;
-        }
-
-        if (data.entry_status === "used") {
-          setScan({
-            message: "Ticket Already Used",
-            variant: "warning",
-            detailHtml: `Ticket <span class="font-mono">${data.ticket_id}</span> for <span class="font-semibold">${data.name}</span> has already been checked in.`,
-          });
-          return;
-        }
-
-        const { error: updateError } = await supabase
-          .from("event_registrations")
-          .update({ entry_status: "used" })
-          .eq("ticket_id", ticketId);
-
-        if (updateError) {
-          setScan({
-            message: "Failed to mark checked-in",
-            variant: "error",
-            detailHtml: "Please try again.",
-          });
-          return;
-        }
-
-        setScan({
-          message: "Entry Successful",
-          variant: "success",
-          detailHtml: `Welcome, <span class="font-semibold">${data.name}</span>!<br/>Ticket: <span class="font-mono">${data.ticket_id}</span>`,
-        });
-      } catch (err) {
-        console.error(err);
-        setScan({
-          message: "Scan error",
-          variant: "error",
-          detailHtml: "An unexpected error occurred.",
-        });
       }
     };
 
     startScanner();
 
     return () => {
-      if (html5QrCode) {
+      if (html5QrCode?.isScanning()) {
         html5QrCode.stop().catch(console.error);
       }
+      html5QrCodeRef.current = null;
     };
-  }, [authChecked]);
+  }, [authChecked, scannerSession]);
+
+  const handleScanAgain = () => {
+    setScannerSession((s) => s + 1);
+  };
 
   const scanClasses =
     scanStatus.variant === "success"
@@ -218,8 +244,27 @@ export default function AdminScanPage() {
                 </p>
               </div>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/80">
-              <div id="qr-reader-full" className="aspect-square w-full" />
+
+            <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/80">
+              {/* Scanner div always in DOM so restart works after Scan Again */}
+              <div
+                id="qr-reader-full"
+                className={`aspect-square w-full ${phase === "result" ? "hidden" : ""}`}
+              />
+              {phase === "processing" && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-slate-950/95">
+                  <p className="text-sm font-medium text-slate-300">
+                    Processing Ticket…
+                  </p>
+                </div>
+              )}
+              {phase === "result" && (
+                <div className="flex min-h-[260px] flex-col items-center justify-center py-8">
+                  <p className="text-[11px] text-slate-500">
+                    Camera off. Click &quot;Scan Again&quot; to verify another ticket.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -227,17 +272,30 @@ export default function AdminScanPage() {
             className={`rounded-2xl border bg-slate-950/80 p-3 text-xs ${scanClasses}`}
           >
             <p className="text-[11px] uppercase tracking-wide text-slate-500">
-              Scan Status
+              {phase === "result" ? "Result" : "Status"}
             </p>
-            <p className="mt-1 text-sm text-slate-300">{scanStatus.message}</p>
-            <div
-              className="mt-2 text-[11px] text-slate-400"
-              dangerouslySetInnerHTML={{ __html: scanStatus.detailHtml }}
-            />
+            <p className="mt-1 text-sm font-medium text-slate-300">
+              {scanStatus.message}
+            </p>
+            {scanStatus.detailHtml && (
+              <div
+                className="mt-2 text-[11px] text-slate-400"
+                dangerouslySetInnerHTML={{ __html: scanStatus.detailHtml }}
+              />
+            )}
           </div>
+
+          {phase === "result" && (
+            <button
+              type="button"
+              onClick={handleScanAgain}
+              className="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-100 shadow-lg transition hover:border-slate-500 hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+            >
+              Scan Again
+            </button>
+          )}
         </div>
       </main>
     </div>
   );
 }
-
