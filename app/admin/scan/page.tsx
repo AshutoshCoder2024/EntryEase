@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Script from "next/script";
+import { Html5Qrcode } from 'html5-qrcode';
 import { ROBOTICS_EVENT_NAME, supabase } from "@/lib/supabaseClient";
 
 type ScanVariant = "info" | "success" | "warning" | "error";
@@ -15,7 +15,7 @@ export default function AdminScanPage() {
     variant: ScanVariant;
     detailHtml: string;
   }>({
-    message: "Point the camera at a ticket QR code.",
+    message: "Scanning…",
     variant: "info",
     detailHtml: "",
   });
@@ -40,28 +40,40 @@ export default function AdminScanPage() {
       detailHtml: string;
     }) => setScanStatus(params);
 
-    const startScanner = () => {
-      const Html5Qrcode = (window as any).Html5Qrcode;
-      if (!Html5Qrcode) return;
-      const html5QrCode = new Html5Qrcode("qr-reader-full");
+    let html5QrCode: Html5Qrcode | null = null;
+
+    const startScanner = async () => {
+      html5QrCode = new Html5Qrcode("qr-reader-full");
       const config = { fps: 10, qrbox: { width: 260, height: 260 } };
 
-      html5QrCode
-        .start(
+      try {
+        // Try to start with rear camera for mobile
+        await html5QrCode.start(
           { facingMode: "environment" },
           config,
           (decodedText: string) => handleScan(decodedText),
           () => {}
-        )
-        .catch((err: unknown) => {
-          console.error("QR scanner failed to start", err);
+        );
+      } catch (err) {
+        console.warn("Failed to start with rear camera, trying default camera", err);
+        try {
+          // Fallback to default camera
+          await html5QrCode.start(
+            {},
+            config,
+            (decodedText: string) => handleScan(decodedText),
+            () => {}
+          );
+        } catch (fallbackErr) {
+          console.error("QR scanner failed to start", fallbackErr);
           setScan({
             message: "Camera access denied or unavailable",
             variant: "error",
             detailHtml:
               "Please allow camera permission in your browser settings or try another device.",
           });
-        });
+        }
+      }
     };
 
     const handleScan = async (payload: string) => {
@@ -145,13 +157,13 @@ export default function AdminScanPage() {
       }
     };
 
-    const interval = setInterval(() => {
-      if ((window as any).Html5Qrcode) {
-        clearInterval(interval);
-        startScanner();
+    startScanner();
+
+    return () => {
+      if (html5QrCode) {
+        html5QrCode.stop().catch(console.error);
       }
-    }, 500);
-    return () => clearInterval(interval);
+    };
   }, [authChecked]);
 
   const scanClasses =
@@ -168,62 +180,55 @@ export default function AdminScanPage() {
   }
 
   return (
-    <>
-      <Script
-        src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"
-        strategy="afterInteractive"
-      />
+    <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
+      <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3">
+          <h1 className="text-sm font-semibold sm:text-base">
+            {ROBOTICS_EVENT_NAME} · QR Ticket Scanner
+          </h1>
+          <button
+            type="button"
+            onClick={() => router.push("/admin")}
+            className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800"
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+      </header>
 
-      <div className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
-        <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3">
-            <h1 className="text-sm font-semibold sm:text-base">
-              {ROBOTICS_EVENT_NAME} · QR Ticket Scanner
-            </h1>
-            <button
-              type="button"
-              onClick={() => router.push("/admin")}
-              className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800"
-            >
-              ← Back to Dashboard
-            </button>
-          </div>
-        </header>
-
-        <main className="flex flex-1 flex-col items-center justify-center px-4 py-6">
-          <div className="w-full max-w-md space-y-4">
-            <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 shadow-2xl shadow-slate-950/80">
-              <div className="mb-3 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Scan QR Ticket
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Hold the QR code inside the box. Works on mobile and desktop.
-                  </p>
-                </div>
-              </div>
-              <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/80">
-                <div id="qr-reader-full" className="aspect-square w-full" />
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-6">
+        <div className="w-full max-w-md space-y-4">
+          <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-4 shadow-2xl shadow-slate-950/80">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                  Scan QR Ticket
+                </p>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Hold the QR code inside the box. Works on mobile and desktop.
+                </p>
               </div>
             </div>
+            <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/80">
+              <div id="qr-reader-full" className="aspect-square w-full" />
+            </div>
+          </div>
 
+          <div
+            className={`rounded-2xl border bg-slate-950/80 p-3 text-xs ${scanClasses}`}
+          >
+            <p className="text-[11px] uppercase tracking-wide text-slate-500">
+              Scan Status
+            </p>
+            <p className="mt-1 text-sm text-slate-300">{scanStatus.message}</p>
             <div
-              className={`rounded-2xl border bg-slate-950/80 p-3 text-xs ${scanClasses}`}
-            >
-              <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                Scan Status
-              </p>
-              <p className="mt-1 text-sm text-slate-300">{scanStatus.message}</p>
-              <div
-                className="mt-2 text-[11px] text-slate-400"
-                dangerouslySetInnerHTML={{ __html: scanStatus.detailHtml }}
-              />
-            </div>
+              className="mt-2 text-[11px] text-slate-400"
+              dangerouslySetInnerHTML={{ __html: scanStatus.detailHtml }}
+            />
           </div>
-        </main>
-      </div>
-    </>
+        </div>
+      </main>
+    </div>
   );
 }
 
