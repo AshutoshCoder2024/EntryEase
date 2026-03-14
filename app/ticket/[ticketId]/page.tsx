@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import Script from "next/script";
+import QRCode from "qrcode";
 import { ROBOTICS_EVENT_NAME, supabase } from "@/lib/supabaseClient";
 
 type TicketRow = {
@@ -33,13 +33,13 @@ export default function TicketPage() {
 
         if (error || !data) {
         console.error(error);
-        setError("Ticket not found. Please check your link or contact the organizers.");
+        setError("Invalid or Unauthorized Ticket");
         setLoading(false);
         return;
       }
 
       if ((data as any).payment_status !== "verified") {
-        setError("This ticket is not yet active. Payment verification is pending.");
+        setError("Invalid or Unauthorized Ticket");
         setLoading(false);
         return;
       }
@@ -56,68 +56,85 @@ export default function TicketPage() {
 
   useEffect(() => {
     if (!ticket || !qrRef.current) return;
-    if (typeof window === "undefined" || !(window as any).QRCode) return;
 
-    qrRef.current.innerHTML = "";
-    const payload = JSON.stringify({
-      ticket_id: ticket.ticket_id,
-      name: ticket.name,
-      event: ROBOTICS_EVENT_NAME,
-    });
+    const generateQR = async () => {
+      const ticketUrl = `${window.location.origin}/ticket/${encodeURIComponent(ticket.ticket_id)}`;
 
-    const QRCode = (window as any).QRCode;
-    new QRCode(qrRef.current, {
-      text: payload,
-      width: 150,
-      height: 150,
-      colorDark: "#0f172a",
-      colorLight: "#e5e7eb",
-      correctLevel: QRCode.CorrectLevel.M,
-    });
+      try {
+        const qrDataUrl = await QRCode.toDataURL(ticketUrl, {
+          width: 512,
+          margin: 2,
+          color: {
+            dark: '#0f172a',
+            light: '#e5e7eb'
+          },
+          errorCorrectionLevel: 'H'
+        });
+
+        qrRef.current!.innerHTML = `<img src="${qrDataUrl}" alt="QR Code" style="width: 100%; height: auto; max-width: 256px;" />`;
+      } catch (err) {
+        console.error('QR generation failed:', err);
+        qrRef.current!.innerHTML = '<p class="text-red-400">Failed to generate QR code</p>';
+      }
+    };
+
+    generateQR();
   }, [ticket]);
 
   async function downloadAsPng() {
-    if (typeof window === "undefined") return;
-    const html2canvas = (window as any).html2canvas;
-    if (!html2canvas) return;
-    const container = document.getElementById("ticket-card");
-    if (!container) return;
+    if (!ticket) return;
 
-    const canvas = await html2canvas(container, {
-      backgroundColor: "#020617",
-      scale: window.devicePixelRatio || 2,
-    });
-    const link = document.createElement("a");
-    link.download = "robotics-ticket.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    const ticketUrl = `${window.location.origin}/ticket/${encodeURIComponent(ticket.ticket_id)}`;
+
+    try {
+      const qrDataUrl = await QRCode.toDataURL(ticketUrl, {
+        width: 1024,
+        margin: 2,
+        color: {
+          dark: '#0f172a',
+          light: '#e5e7eb'
+        },
+        errorCorrectionLevel: 'H'
+      });
+
+      const link = document.createElement("a");
+      link.download = `robotics-ticket-${ticket.ticket_id}.png`;
+      link.href = qrDataUrl;
+      link.click();
+    } catch (err) {
+      console.error('PNG download failed:', err);
+      alert('Failed to download PNG');
+    }
   }
 
-  async function downloadAsPdf() {
-    if (typeof window === "undefined") return;
-    const html2canvas = (window as any).html2canvas;
-    const jsPDF = (window as any).jspdf?.jsPDF;
-    if (!html2canvas || !jsPDF) return;
+  async function downloadAsSvg() {
+    if (!ticket) return;
 
-    const container = document.getElementById("ticket-card");
-    if (!container) return;
+    const ticketUrl = `${window.location.origin}/ticket/${encodeURIComponent(ticket.ticket_id)}`;
 
-    const canvas = await html2canvas(container, {
-      backgroundColor: "#020617",
-      scale: 2,
-    });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({
-      orientation: "portrait",
-      unit: "pt",
-      format: "a4",
-    });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const ratio = canvas.width / canvas.height;
-    const pdfWidth = pageWidth - 72;
-    const pdfHeight = pdfWidth / ratio;
-    pdf.addImage(imgData, "PNG", 36, 60, pdfWidth, pdfHeight);
-    pdf.save("robotics-ticket.pdf");
+    try {
+      const qrSvg = await QRCode.toString(ticketUrl, {
+        type: 'svg',
+        width: 512,
+        margin: 2,
+        color: {
+          dark: '#0f172a',
+          light: '#e5e7eb'
+        },
+        errorCorrectionLevel: 'H'
+      });
+
+      const blob = new Blob([qrSvg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = `robotics-ticket-${ticket.ticket_id}.svg`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('SVG download failed:', err);
+      alert('Failed to download SVG');
+    }
   }
 
   const statusLabel =
@@ -126,21 +143,7 @@ export default function TicketPage() {
       : "Payment confirmed · Not checked-in";
 
   return (
-    <>
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
-        strategy="afterInteractive"
-      />
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-        strategy="afterInteractive"
-      />
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-        strategy="afterInteractive"
-      />
-
-      <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50">
         <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/60 backdrop-blur">
           <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-dashed border-slate-600 bg-slate-900/80 text-[9px] text-slate-400">
@@ -276,10 +279,10 @@ export default function TicketPage() {
                       Download Ticket (PNG)
                     </button>
                     <button
-                      onClick={downloadAsPdf}
+                      onClick={downloadAsSvg}
                       className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-100 shadow-md shadow-slate-950/40 transition hover:border-blue-500 hover:text-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
                     >
-                      Download Ticket (PDF)
+                      Download QR (SVG)
                     </button>
                   </div>
                   <p className="mt-2 text-[11px] text-slate-500 sm:mt-0">

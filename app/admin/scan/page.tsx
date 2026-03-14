@@ -78,19 +78,26 @@ export default function AdminScanPage() {
 
     const handleScan = async (payload: string) => {
       try {
-        let parsed: { ticket_id?: string };
+        let ticketId: string | null = null;
+
+        // Try to parse as URL
         try {
-          parsed = JSON.parse(payload);
+          const url = new URL(payload);
+          const pathParts = url.pathname.split('/');
+          const ticketIndex = pathParts.indexOf('ticket');
+          if (ticketIndex !== -1 && pathParts[ticketIndex + 1]) {
+            ticketId = decodeURIComponent(pathParts[ticketIndex + 1]);
+          }
         } catch {
-          parsed = { ticket_id: payload.trim() };
+          // Not a URL, try as direct ticket ID
+          ticketId = payload.trim();
         }
 
-        const ticketId = parsed.ticket_id;
         if (!ticketId) {
           setScan({
             message: "Invalid QR format",
             variant: "error",
-            detailHtml: "QR does not contain a ticket_id.",
+            detailHtml: "QR does not contain a valid ticket URL or ID.",
           });
           return;
         }

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendTicketEmail } from "@/lib/email";
+import { nanoid } from "nanoid";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,7 +56,7 @@ export async function POST(req: NextRequest) {
       .select("ticket_id", { count: "exact", head: true })
       .not("ticket_id", "is", null);
 
-    const ticketId = `EVT-2026-${String((count || 0) + 1).padStart(4, "0")}`;
+    const ticketId = `EVT-${nanoid(10).toUpperCase()}`;
 
     const { error: updateError } = await supabase
       .from("event_registrations")
