@@ -190,7 +190,7 @@ export default function AdminScanPage() {
     startScanner();
 
     return () => {
-      if (html5QrCode?.isScanning()) {
+      if (html5QrCode?.isScanning) {
         html5QrCode.stop().catch(console.error);
       }
       html5QrCodeRef.current = null;
