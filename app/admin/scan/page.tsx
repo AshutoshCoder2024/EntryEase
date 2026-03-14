@@ -20,6 +20,8 @@ export default function AdminScanPage() {
     detailHtml: "",
   });
 
+  
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const ok = window.localStorage.getItem("admin-authed") === "true";
