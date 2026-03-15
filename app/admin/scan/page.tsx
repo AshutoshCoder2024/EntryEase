@@ -7,13 +7,15 @@ import { ROBOTICS_EVENT_NAME, supabase } from "@/lib/supabaseClient";
 
 type ScanVariant = "info" | "success" | "warning" | "error";
 
-type ScanPhase = "scanning" | "processing" | "result";
+type ScanPhase = "permission" | "scanning" | "processing" | "result";
+type PermissionState = "idle" | "requesting" | "granted" | "denied";
 
 export default function AdminScanPage() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [scannerSession, setScannerSession] = useState(0);
-  const [phase, setPhase] = useState<ScanPhase>("scanning");
+  const [phase, setPhase] = useState<ScanPhase>("permission");
+  const [permissionState, setPermissionState] = useState<PermissionState>("idle");
   const [scanStatus, setScanStatus] = useState<{
     message: string;
     variant: ScanVariant;
@@ -26,6 +28,7 @@ export default function AdminScanPage() {
 
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const scanLockRef = useRef(false);
+  const requestPermissionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -41,11 +44,54 @@ export default function AdminScanPage() {
     if (!authChecked || typeof window === "undefined") return;
 
     scanLockRef.current = false;
-    setPhase("scanning");
-    setScanStatus({ message: "Scanning…", variant: "info", detailHtml: "" });
+    setPhase("permission");
+    setPermissionState("idle");
+    setScanStatus({ message: "Camera access needed to scan tickets", variant: "info", detailHtml: "" });
 
     let html5QrCode: Html5Qrcode | null = null;
     html5QrCodeRef.current = null;
+
+    const requestCameraPermission = (): Promise<boolean> => {
+      return new Promise((resolve) => {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setPermissionState("denied");
+          setScanStatus({
+            message: "Camera not supported",
+            variant: "error",
+            detailHtml: "This device or browser does not support camera access.",
+          });
+          resolve(false);
+          return;
+        }
+        setPermissionState("requesting");
+        setScanStatus({
+          message: "Requesting camera access…",
+          variant: "info",
+          detailHtml: "Please allow camera when your browser asks.",
+        });
+        navigator.mediaDevices
+          .getUserMedia({ video: true })
+          .then((stream) => {
+            stream.getTracks().forEach((t) => t.stop());
+            setPermissionState("granted");
+            setPhase("scanning");
+            setScanStatus({ message: "Scanning…", variant: "info", detailHtml: "" });
+            resolve(true);
+          })
+          .catch((err) => {
+            console.warn("Camera permission error:", err);
+            setPermissionState("denied");
+            setScanStatus({
+              message: "Camera permission denied",
+              variant: "error",
+              detailHtml:
+                "Allow camera in your browser settings for this site, then tap &quot;Allow camera&quot; again.",
+            });
+            setPhase("permission");
+            resolve(false);
+          });
+      });
+    };
 
     const startScanner = async () => {
       const element = document.getElementById("qr-reader-full");
@@ -53,7 +99,9 @@ export default function AdminScanPage() {
 
       html5QrCode = new Html5Qrcode("qr-reader-full");
       html5QrCodeRef.current = html5QrCode;
-      const config = { fps: 10, qrbox: { width: 260, height: 260 } };
+      const scanConfig = { fps: 10, qrbox: { width: 260, height: 260 } };
+      const onScanSuccess = (decodedText: string) => onScan(decodedText);
+      const onScanError = () => {};
 
       const onScan = (decodedText: string) => {
         if (scanLockRef.current) return;
@@ -158,36 +206,50 @@ export default function AdminScanPage() {
         processTicket();
       };
 
-      try {
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          config,
-          (decodedText: string) => onScan(decodedText),
-          () => {}
+      const tryStart = async (cameraIdOrConfig: string | { facingMode?: string }) => {
+        await html5QrCode!.start(
+          cameraIdOrConfig,
+          scanConfig,
+          onScanSuccess,
+          onScanError
         );
-      } catch (err) {
-        console.warn("Failed to start with rear camera, trying default camera", err);
+      };
+
+      try {
+        await tryStart({ facingMode: "environment" });
+      } catch {
         try {
-          await html5QrCode.start(
-            {},
-            config,
-            (decodedText: string) => onScan(decodedText),
-            () => {}
-          );
-        } catch (fallbackErr) {
-          console.error("QR scanner failed to start", fallbackErr);
-          setScanStatus({
-            message: "Camera access denied or unavailable",
-            variant: "error",
-            detailHtml:
-              "Please allow camera permission in your browser settings or try another device.",
-          });
-          setPhase("result");
+          await tryStart({ facingMode: "user" });
+        } catch {
+          try {
+            const devices = await Html5Qrcode.getCameras();
+            if (devices && devices.length > 0) {
+              await tryStart(devices[0].id);
+            } else {
+              throw new Error("No camera found");
+            }
+          } catch (fallbackErr) {
+            console.error("QR scanner failed to start", fallbackErr);
+            setScanStatus({
+              message: "Camera access denied or unavailable",
+              variant: "error",
+              detailHtml:
+                "Please allow camera permission in your browser settings or try another device.",
+            });
+            setPhase("result");
+          }
         }
       }
     };
 
-    startScanner();
+    const runPermissionThenScanner = () => {
+      requestCameraPermission().then((ok) => {
+        if (ok) startScanner();
+      });
+    };
+
+    requestPermissionRef.current = runPermissionThenScanner;
+    runPermissionThenScanner();
 
     return () => {
       if (html5QrCode?.isScanning) {
@@ -244,9 +306,47 @@ export default function AdminScanPage() {
             </div>
 
             <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/80">
+              {/* Permission step: show before camera starts */}
+              {phase === "permission" && (
+                <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 p-6">
+                  {(permissionState === "requesting" || permissionState === "idle") && (
+                    <>
+                      <div className="h-12 w-12 animate-spin rounded-full border-2 border-indigo-500/30 border-t-indigo-400" />
+                      <p className="text-center text-sm font-medium text-slate-300">
+                        Requesting camera access…
+                      </p>
+                      <p className="text-center text-xs text-slate-500">
+                        Please allow when your browser asks.
+                      </p>
+                    </>
+                  )}
+                  {permissionState === "denied" && (
+                    <>
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-rose-500/30 bg-rose-500/10">
+                        <svg className="h-7 w-7 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                      <p className="text-center text-sm font-medium text-slate-200">
+                        Camera access denied
+                      </p>
+                      <p className="text-center text-xs text-slate-500">
+                        Allow camera in browser settings for this site, then try again.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => requestPermissionRef.current?.()}
+                        className="mt-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-900"
+                      >
+                        Allow camera
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
               <div
                 id="qr-reader-full"
-                className={`aspect-square w-full min-h-[280px] ${phase === "result" ? "hidden" : ""}`}
+                className={`aspect-square w-full min-h-[280px] ${phase === "result" || phase === "permission" ? "hidden" : ""}`}
               />
               {phase === "processing" && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-slate-950/95">

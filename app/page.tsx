@@ -164,32 +164,35 @@ export default function Home() {
 
       <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 lg:flex-row">
-          <section className="hidden w-full max-w-sm flex-col justify-between rounded-3xl border border-white/10 bg-slate-900/40 p-6 shadow-soft-lg backdrop-blur-xl lg:flex">
-            <div>
+          {/* UPI QR & ID — visible on all devices (mobile: top, desktop: left) */}
+          <section className="hidden w-full shrink-0 rounded-3xl border border-white/10 bg-slate-900/40 p-6 shadow-soft-lg backdrop-blur-xl lg:block lg:max-w-sm">            <div>
               <h2 className="text-xl font-semibold text-white">
                 Pay via UPI
               </h2>
               <p className="mt-2 text-sm text-slate-400">
                 Scan the QR code or use UPI ID: <strong className="text-slate-200">{UPI_ID}</strong>
               </p>
-              <div className="mt-5 flex justify-center rounded-2xl border border-white/10 bg-white p-5 shadow-soft">
+              <div className="mt-5 flex justify-center rounded-2xl border border-white/10 bg-white p-4 shadow-soft sm:p-5">
                 <img
-                  src="/upiqr.png"
+                  src="/upiqr1.png"
                   alt="UPI Payment QR Code"
-                  className="h-48 w-48 object-contain"
+                  className="h-44 w-44 object-contain sm:h-48 sm:w-48"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = "none";
                     const parent = (e.target as HTMLImageElement).parentElement;
                     if (parent) {
                       const fallback = document.createElement("div");
                       fallback.className = "text-center text-xs text-slate-500 py-8";
-                      fallback.innerHTML = `Place your UPI QR at<br/><code class="text-slate-400">public/upiqr.png</code><br/><br/>Or pay to: ${UPI_ID}`;
+                      fallback.innerHTML = `Place your UPI QR at<br/><code class="text-slate-400">public/upiqr1.png</code><br/><br/>Or pay to: ${UPI_ID}`;
                       parent.appendChild(fallback);
                     }
                   }}
                 />
               </div>
-              <p className="mt-4 text-xs text-slate-500">
+              <p className="mt-3 text-center font-mono text-sm text-slate-300 sm:mt-4">
+                {UPI_ID}
+              </p>
+              <p className="mt-2 text-center text-xs text-slate-500">
                 Amount: ₹{REGISTRATION_FEE}. After payment, enter the UTR number in the form.
               </p>
             </div>
@@ -312,9 +315,33 @@ export default function Home() {
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Payment (UPI)
                 </h3>
+                {/* Mobile: show QR in payment section before instructions */}
+                <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-slate-800/40 p-4 lg:hidden">
+                  <p className="mb-3 text-center text-xs text-slate-400">Scan to pay</p>
+                  <div className="flex justify-center rounded-xl border border-white/10 bg-white p-3">
+                    <img
+                      src="/upiqr1.png"
+                      alt="UPI Payment QR Code"
+                      className="h-40 w-40 object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                        const parent = (e.target as HTMLImageElement).parentElement;
+                        if (parent) {
+                          const fallback = document.createElement("div");
+                          fallback.className = "text-center text-xs text-slate-500 py-6";
+                          fallback.innerHTML = `Or pay to: ${UPI_ID}`;
+                          parent.appendChild(fallback);
+                        }
+                      }}
+                    />
+                  </div>
+                  <p className="mt-2 font-mono text-sm text-slate-300">{UPI_ID}</p>
+                </div>
                 <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
                   <p className="text-sm text-slate-300">
-                    1. Pay ₹{REGISTRATION_FEE} via UPI to <strong className="text-slate-200">{UPI_ID}</strong> (scan QR on the left).
+                    1. Pay ₹{REGISTRATION_FEE} via UPI to <strong className="text-slate-200">{UPI_ID}</strong>
+                    <span className="hidden lg:inline"> (scan QR on the left).</span>
+                    <span className="lg:hidden"> (scan QR above).</span>
                   </p>
                   <p className="mt-2 text-sm text-slate-300">
                     2. After payment, you&apos;ll get a <strong className="text-slate-200">UTR / transaction ID</strong>. Enter it below.
