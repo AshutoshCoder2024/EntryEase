@@ -1,14 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ROBOTICS_EVENT_CAPACITY,
-  ROBOTICS_EVENT_NAME,
-  UPI_ID,
-  REGISTRATION_FEE,
-  supabase,
-} from "@/lib/supabaseClient";
+import { ROBOTICS_EVENT_CAPACITY, ROBOTICS_EVENT_NAME, UPI_ID, REGISTRATION_FEE } from "@/lib/supabaseClient";
+import { validateRegistrationInput } from "@/lib/registration-validation";
 
 type StatusVariant = "info" | "success" | "error";
 
@@ -29,47 +24,44 @@ export default function Home() {
   const [status, setStatus] = useState<{ message: string; variant: StatusVariant } | null>(null);
   const [loading, setLoading] = useState(false);
   const [remainingSeats, setRemainingSeats] = useState<number | null>(null);
+  const submitGuardRef = useRef(false);
+  /** Honeypot — must stay empty (bots often fill hidden fields). */
+  const [websiteHp, setWebsiteHp] = useState("");
 
   useEffect(() => {
     async function fetchCapacity() {
-      const { count, error } = await supabase
-        .from("event_registrations")
-        .select("*", { count: "exact", head: true })
-        .eq("payment_status", "verified");
-
-      if (error) {
-        console.warn("Could not fetch capacity info", error);
-        return;
+      try {
+        const res = await fetch("/api/event/capacity", { cache: "no-store" });
+        const json = (await res.json()) as { remaining?: number | null };
+        if (typeof json.remaining === "number") {
+          setRemainingSeats(json.remaining);
+        }
+      } catch {
+        console.warn("Could not fetch capacity info");
       }
-      const used = count || 0;
-      setRemainingSeats(Math.max(ROBOTICS_EVENT_CAPACITY - used, 0));
     }
 
     fetchCapacity().catch(() => {});
   }, []);
 
   function validate() {
-    const nextErrors: Record<string, string> = {};
-    const phoneRegex = /^\d{10}$/;
-
-    if (!fullName.trim()) nextErrors.fullName = "Full name is required";
-    if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) {
-      nextErrors.email = "Please enter a valid email address";
+    const result = validateRegistrationInput({
+      fullName,
+      email,
+      phone,
+      department,
+      year,
+      rollNumber,
+      utrNumber,
+      agreeInfo,
+      agreeRules,
+    });
+    if (!result.ok) {
+      setErrors(result.errors);
+      return false;
     }
-    if (!phoneRegex.test(phone.trim())) {
-      nextErrors.phone = "Phone number must contain 10 digits";
-    }
-    if (!utrNumber.trim()) {
-      nextErrors.utrNumber = "Please enter your UTR (transaction) number after payment";
-    } else if (utrNumber.trim().length < 10) {
-      nextErrors.utrNumber = "UTR number is usually 12 digits. Please enter the full UTR.";
-    }
-    if (!agreeInfo || !agreeRules) {
-      nextErrors.terms = "You must accept all terms to continue";
-    }
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    setErrors({});
+    return true;
   }
 
   function showStatus(message: string, variant: StatusVariant = "info") {
@@ -78,6 +70,7 @@ export default function Home() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitGuardRef.current) return;
     setStatus(null);
     setErrors({});
     setLoading(true);
@@ -89,32 +82,47 @@ export default function Home() {
         return;
       }
 
-      const { count, error } = await supabase
-        .from("event_registrations")
-        .select("*", { count: "exact", head: true })
-        .eq("payment_status", "verified");
+      submitGuardRef.current = true;
 
-      if (!error && typeof count === "number" && count >= ROBOTICS_EVENT_CAPACITY) {
-        setRemainingSeats(0);
-        throw new Error("Registration Closed — Event Full.");
-      }
-
-      const { error: insertError } = await supabase.from("event_registrations").insert({
-        name: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        department: department || null,
-        year: year || null,
-        roll_number: rollNumber.trim() || null,
-        utr_number: utrNumber.trim(),
-        ticket_id: null,
-        payment_status: "pending",
-        entry_status: "not_used",
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName,
+          email,
+          phone,
+          department,
+          year,
+          rollNumber,
+          utrNumber,
+          agreeInfo,
+          agreeRules,
+          website: websiteHp,
+        }),
       });
 
-      if (insertError) {
-        console.error(insertError);
-        throw new Error("Could not create registration. Please try again.");
+      const json = (await res.json()) as { error?: string; errors?: Record<string, string> };
+
+      if (res.status === 422 && json.errors) {
+        setErrors(json.errors);
+        showStatus("Please fix the highlighted fields and try again.", "error");
+        return;
+      }
+
+      if (res.status === 429) {
+        showStatus(json.error ?? "Too many attempts. Please try again later.", "error");
+        return;
+      }
+
+      if (res.status === 409) {
+        if (json.error?.includes("Full")) {
+          setRemainingSeats(0);
+        }
+        throw new Error(json.error ?? "Registration could not be completed.");
+      }
+
+      if (!res.ok) {
+        throw new Error(json.error ?? "Could not create registration. Please try again.");
       }
 
       showStatus("Registration submitted. Awaiting payment verification.", "success");
@@ -123,6 +131,7 @@ export default function Home() {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       showStatus(message, "error");
     } finally {
+      submitGuardRef.current = false;
       setLoading(false);
     }
   }
@@ -223,6 +232,15 @@ export default function Home() {
             </div>
 
             <form className="space-y-8" onSubmit={handleSubmit}>
+              <input
+                type="text"
+                className="hidden"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden
+                value={websiteHp}
+                onChange={(e) => setWebsiteHp(e.target.value)}
+              />
               <div className="space-y-4">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Personal Information
@@ -291,6 +309,7 @@ export default function Home() {
                       <option value="MCA">MCA</option>
                       <option value="Other">Other</option>
                     </select>
+                    {errors.department && <p className="mt-1.5 text-xs text-rose-400">{errors.department}</p>}
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-300">Year</label>
@@ -305,6 +324,7 @@ export default function Home() {
                       <option value="3rd Year">3rd Year</option>
                       <option value="4th Year">4th Year</option>
                     </select>
+                    {errors.year && <p className="mt-1.5 text-xs text-rose-400">{errors.year}</p>}
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-300">Roll Number</label>
@@ -315,6 +335,7 @@ export default function Home() {
                       className="w-full rounded-xl border border-slate-600/80 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
                       placeholder="Optional"
                     />
+                    {errors.rollNumber && <p className="mt-1.5 text-xs text-rose-400">{errors.rollNumber}</p>}
                   </div>
                 </div>
               </div>

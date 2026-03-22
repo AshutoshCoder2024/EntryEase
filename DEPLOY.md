@@ -48,10 +48,11 @@ Before deploying, ensure:
   - Table `event_registrations` created (see [SETUP.md](../SETUP.md) or project SETUP.md).
   - Realtime enabled for `event_registrations`.
   - You have: **Project URL**, **anon key**, **service_role key**.
+  - **Recommended:** In Supabase → Authentication → Policies, **revoke INSERT (and optionally SELECT) on `event_registrations` for the `anon` role** for registrations that go through `POST /api/register` (service role). Keep `anon` only if other parts of the app still need it (e.g. admin dashboard uses anon for reads — adjust as needed). See `docs/supabase-production.sql` for RLS notes.
 - [ ] **Email (Gmail SMTP)**:
   - Gmail address and [App Password](https://support.google.com/accounts/answer/185833) (or other SMTP credentials).
 - [ ] **Code** is in a Git repository (GitHub, GitLab, or Bitbucket) so Vercel can connect it.
-- [ ] **Admin password** decided (e.g. strong password for `NEXT_PUBLIC_ADMIN_PASSWORD`).
+- [ ] **Admin password** decided (server env `ADMIN_PASSWORD`; optional `ADMIN_SESSION_SECRET` for signing).
 - [ ] **UPI**: `lib/supabaseClient.ts` has your `UPI_ID` and `public/upiqr.png` is your UPI QR image.
 
 ---
@@ -90,7 +91,11 @@ Before deploying, add all required environment variables in Vercel:
 | `EMAIL_USER` | Yes | Gmail (or SMTP) email address |
 | `EMAIL_PASS` | Yes | Gmail App Password or SMTP password |
 | `NEXT_PUBLIC_BASE_URL` | Yes | **Production URL** (e.g. `https://your-app.vercel.app`) |
-| `NEXT_PUBLIC_ADMIN_PASSWORD` | Yes | Admin login password |
+| `REGISTRATION_RATE_LIMIT_MAX` | Optional | Max registration POSTs per IP per window (default `8`, max `100`) |
+| `REGISTRATION_RATE_LIMIT_WINDOW_MS` | Optional | Rate-limit window in ms (default `900000` = 15 minutes, min 1 min, max 24h) |
+| `ADMIN_PASSWORD` | Yes | Admin login password (**server-only**, not exposed to the browser bundle) |
+| `ADMIN_SESSION_SECRET` | Recommended | Long random string used to sign the admin httpOnly session cookie (falls back to `ADMIN_PASSWORD` if unset) |
+| `NEXT_PUBLIC_ADMIN_PASSWORD` | Legacy | **Deprecated** — only used if `ADMIN_PASSWORD` is not set (exposes password to the client bundle; migrate away) |
 
 Optional (for non-Gmail or custom sender):
 
@@ -136,8 +141,10 @@ EMAIL_PASS=xxxx xxxx xxxx xxxx
 # Must be your production URL (no trailing slash)
 NEXT_PUBLIC_BASE_URL=https://your-app.vercel.app
 
-# Admin dashboard login (shared password)
-NEXT_PUBLIC_ADMIN_PASSWORD=YourStrongAdminPassword123!
+# Admin dashboard (server-only — not bundled for the public site)
+ADMIN_PASSWORD=YourStrongAdminPassword123!
+# Optional: dedicated secret for cookie signing (recommended in production)
+# ADMIN_SESSION_SECRET=generate_a_long_random_string_here
 ```
 
 - Never commit `.env.local` or paste real keys into docs.
@@ -171,7 +178,7 @@ If anything fails, see [Troubleshooting](#8-troubleshooting).
 **How to open admin:**
 
 1. Go to `https://your-app.vercel.app/admin/login`.
-2. Enter the password you set in `NEXT_PUBLIC_ADMIN_PASSWORD`.
+2. Enter the password you set in `ADMIN_PASSWORD` (or legacy `NEXT_PUBLIC_ADMIN_PASSWORD`).
 3. You’ll be redirected to `/admin`. Use **Scan QR Ticket** to open the scanner.
 
 Access is controlled only by the shared password (stored in env). Keep it strong and share only with organizers.
@@ -208,7 +215,7 @@ Access is controlled only by the shared password (stored in env). Keep it strong
 
 ### Admin login says “Admin password is not configured”
 
-- Add **NEXT_PUBLIC_ADMIN_PASSWORD** in Vercel (Environment Variables), then redeploy so the client bundle gets the new value.
+- Add **`ADMIN_PASSWORD`** in Vercel (Production environment), redeploy, and try again. Avoid `NEXT_PUBLIC_ADMIN_PASSWORD` in new deployments (it ships the password to every visitor’s browser bundle).
 
 ### Ticket link in email is wrong or broken
 
@@ -223,7 +230,7 @@ Use this before and after going live:
 **Before deploy**
 
 - [ ] Supabase project created; `event_registrations` table and Realtime configured
-- [ ] All env vars ready (Supabase, EMAIL_USER, EMAIL_PASS, NEXT_PUBLIC_BASE_URL, NEXT_PUBLIC_ADMIN_PASSWORD)
+- [ ] All env vars ready (Supabase, EMAIL_USER, EMAIL_PASS, NEXT_PUBLIC_BASE_URL, ADMIN_PASSWORD)
 - [ ] `UPI_ID` and `public/upiqr.png` set in the repo
 - [ ] Code pushed to Git; Vercel connected to the correct repo and root directory
 

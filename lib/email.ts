@@ -1,7 +1,13 @@
 import nodemailer from "nodemailer";
 
-const EVENT_NAME = "Robotics Challenge 2026";
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://entry-ease-uh3d.vercel.app/";
+import { ROBOTICS_EVENT_NAME } from "@/lib/event-config";
+
+function getPublicBaseUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
+  return "http://localhost:3000";
+}
 
 /**
  * Builds a Nodemailer transporter from environment variables.
@@ -47,13 +53,14 @@ export async function sendTicketEmail({
 }: SendTicketEmailParams): Promise<{ success: true } | { success: false; error: string }> {
   try {
     const transporter = getTransporter();
-    const ticketUrl = `${BASE_URL}/ticket/${encodeURIComponent(ticketId)}`;
+    const base = getPublicBaseUrl();
+    const ticketUrl = `${base}/ticket/${encodeURIComponent(ticketId)}`;
 
     const html = `
       <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto;">
         <h2 style="color: #0f172a;">Payment verified – your ticket is ready</h2>
         <p>Hi ${escapeHtml(studentName)},</p>
-        <p>Your payment has been verified. Your digital QR ticket for <strong>${escapeHtml(EVENT_NAME)}</strong> is ready.</p>
+        <p>Your payment has been verified. Your digital QR ticket for <strong>${escapeHtml(ROBOTICS_EVENT_NAME)}</strong> is ready.</p>
         <p><strong>Ticket ID:</strong> <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${escapeHtml(ticketId)}</code></p>
         <p>Open your ticket (with QR code) here:</p>
         <p>
@@ -63,16 +70,16 @@ export async function sendTicketEmail({
         </p>
         <p style="font-size: 14px; color: #64748b;">Or copy this link: ${ticketUrl}</p>
         <p><strong>At the event:</strong> Show the QR code at the entrance. Each ticket works only once.</p>
-        <p style="margin-top: 24px; font-size: 12px; color: #94a3b8;">— ${EVENT_NAME} Team</p>
+        <p style="margin-top: 24px; font-size: 12px; color: #94a3b8;">— ${ROBOTICS_EVENT_NAME} Team</p>
       </div>
     `;
 
     await transporter.sendMail({
       from: process.env.EMAIL_FROM ?? process.env.EMAIL_USER,
       to,
-      subject: `Your ${EVENT_NAME} Ticket – ${ticketId}`,
+      subject: `Your ${ROBOTICS_EVENT_NAME} Ticket – ${ticketId}`,
       html,
-      text: `Hi ${studentName},\n\nYour payment has been verified. Your digital QR ticket for ${EVENT_NAME} is ready.\n\nTicket ID: ${ticketId}\n\nView and download your ticket: ${ticketUrl}\n\nShow the QR code at the event entrance. Each ticket works only once.\n\n— ${EVENT_NAME} Team`,
+      text: `Hi ${studentName},\n\nYour payment has been verified. Your digital QR ticket for ${ROBOTICS_EVENT_NAME} is ready.\n\nTicket ID: ${ticketId}\n\nView and download your ticket: ${ticketUrl}\n\nShow the QR code at the event entrance. Each ticket works only once.\n\n— ${ROBOTICS_EVENT_NAME} Team`,
     });
 
     return { success: true };

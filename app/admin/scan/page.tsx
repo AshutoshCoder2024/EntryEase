@@ -31,13 +31,25 @@ export default function AdminScanPage() {
   const requestPermissionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const ok = window.localStorage.getItem("admin-authed") === "true";
-    if (!ok) {
-      router.replace("/admin/login");
-      return;
+    let cancelled = false;
+    async function check() {
+      try {
+        const res = await fetch("/api/admin/session", { credentials: "include" });
+        const json = (await res.json()) as { authenticated?: boolean };
+        if (cancelled) return;
+        if (!json.authenticated) {
+          router.replace("/admin/login");
+          return;
+        }
+        setAuthChecked(true);
+      } catch {
+        if (!cancelled) router.replace("/admin/login");
+      }
     }
-    setAuthChecked(true);
+    check();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   useEffect(() => {

@@ -80,13 +80,25 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const ok = window.localStorage.getItem("admin-authed") === "true";
-    if (!ok) {
-      router.replace("/admin/login");
-      return;
+    let cancelled = false;
+    async function check() {
+      try {
+        const res = await fetch("/api/admin/session", { credentials: "include" });
+        const json = (await res.json()) as { authenticated?: boolean };
+        if (cancelled) return;
+        if (!json.authenticated) {
+          router.replace("/admin/login");
+          return;
+        }
+        setAuthChecked(true);
+      } catch {
+        if (!cancelled) router.replace("/admin/login");
+      }
     }
-    setAuthChecked(true);
+    check();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   async function refreshData() {
@@ -134,15 +146,26 @@ export default function AdminPage() {
       const res = await fetch("/api/verify-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ registrationId }),
       });
-      const json = await res.json();
+      const json = (await res.json()) as {
+        error?: string;
+        success?: boolean;
+        emailSent?: boolean;
+        alreadyVerified?: boolean;
+        ticketId?: string;
+      };
 
+      if (res.status === 401) {
+        router.replace("/admin/login");
+        return;
+      }
       if (!res.ok) {
         alert(json.error ?? "Verification failed");
         return;
       }
-      if (json.success && json.emailSent === false) {
+      if (json.success && json.emailSent === false && !json.alreadyVerified) {
         const ticketUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/ticket/${encodeURIComponent(json.ticketId ?? "")}`;
         alert(`Payment verified and ticket ${json.ticketId} created, but the confirmation email could not be sent. Check EMAIL_USER/EMAIL_PASS in .env.local and server logs. You can share this link with the student: ${ticketUrl}`);
       }

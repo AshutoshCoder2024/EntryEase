@@ -10,32 +10,46 @@ export default function AdminLoginPage() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const ok = window.localStorage.getItem("admin-authed") === "true";
-    if (ok) {
-      router.replace("/admin");
-      return;
+    let cancelled = false;
+    async function check() {
+      try {
+        const res = await fetch("/api/admin/session", { credentials: "include" });
+        const json = (await res.json()) as { authenticated?: boolean };
+        if (cancelled) return;
+        if (json.authenticated) {
+          router.replace("/admin");
+          return;
+        }
+        setChecking(false);
+      } catch {
+        if (!cancelled) setChecking(false);
+      }
     }
-    setChecking(false);
+    check();
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    const expected = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-    if (!expected) {
-      setError("Admin password is not configured. Ask the developer to set NEXT_PUBLIC_ADMIN_PASSWORD.");
-      return;
-    }
-
-    if (password === expected) {
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("admin-authed", "true");
+    try {
+      const res = await fetch("/api/admin/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ password }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setError(json.error ?? "Login failed");
+        return;
       }
       router.replace("/admin");
-    } else {
-      setError("Incorrect password. Please try again.");
+    } catch {
+      setError("Could not reach the server. Try again.");
     }
   }
 
@@ -83,7 +97,7 @@ export default function AdminLoginPage() {
         </form>
 
         <p className="mt-6 text-center text-xs text-slate-500">
-          This password is shared only with event organizers.
+          Session is stored in a secure httpOnly cookie. Use a strong password set in server env (ADMIN_PASSWORD).
         </p>
       </div>
     </div>
