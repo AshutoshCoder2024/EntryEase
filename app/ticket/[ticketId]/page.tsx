@@ -149,8 +149,12 @@ export default function TicketPage() {
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950/20 text-slate-50">
       <header className="sticky top-0 z-30 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[10px] font-medium text-slate-400">
-            Logo
+          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5">
+            <img
+              src="/college-logo.png"
+              alt="College logo"
+              className="h-8 w-8 object-contain"
+            />
           </div>
           <div className="flex-1 text-center">
             <h1 className="text-base font-semibold tracking-tight text-white sm:text-lg">
@@ -160,8 +164,12 @@ export default function TicketPage() {
               Show this QR ticket at the entrance
             </p>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[10px] font-medium text-slate-400">
-            Club
+          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5">
+            <img
+              src="/xts.png"
+              alt="Club logo"
+              className="h-8 w-8 object-contain"
+            />
           </div>
         </div>
       </header>

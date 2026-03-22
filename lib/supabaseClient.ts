@@ -5,10 +5,10 @@ export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "Y
 
 export const ROBOTICS_EVENT_NAME = "Robotics Challenge 2026";
 export const ROBOTICS_EVENT_CAPACITY = 150;
-export const REGISTRATION_FEE = 199;
+export const REGISTRATION_FEE = 29;
 
 /** Your UPI ID for payments (e.g. yourname@paytm / phonepe). Displayed on registration page. */
-export const UPI_ID = "ashutosh@paytm"; // TODO: replace with your UPI ID
+export const UPI_ID = "ashutoshsahu9601@okicici"; // TODO: replace with your UPI ID
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 

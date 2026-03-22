@@ -145,8 +145,12 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950/20 text-slate-100">
       <header className="sticky top-0 z-30 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[10px] font-medium text-slate-400">
-            Logo
+          <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+            <img
+              src="/college-logo.png"
+              alt="College logo"
+              className="h-9 w-9 object-contain"
+            />
           </div>
           <div className="flex-1 text-center">
             <h1 className="text-lg font-semibold tracking-tight text-white sm:text-xl md:text-2xl">
@@ -156,8 +160,12 @@ export default function Home() {
               Pay via UPI &amp; enter UTR · Ticket sent to your email after verification
             </p>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[10px] font-medium text-slate-400">
-            Club
+          <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+            <img
+              src="/xts.png"
+              alt="Club logo"
+              className="h-9 w-9 object-contain"
+            />
           </div>
         </div>
       </header>
