@@ -3,10 +3,15 @@ import { createHmac, timingSafeEqual } from "crypto";
 export const ADMIN_SESSION_COOKIE = "admin_session";
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+/**
+ * Secret used to sign the httpOnly admin cookie (server-only).
+ * Order: dedicated secret → server password → legacy NEXT_PUBLIC_* (same value many projects use for login only).
+ */
 function getSigningSecret(): string | null {
   const s =
     process.env.ADMIN_SESSION_SECRET?.trim() ||
-    process.env.ADMIN_PASSWORD?.trim();
+    process.env.ADMIN_PASSWORD?.trim() ||
+    process.env.NEXT_PUBLIC_ADMIN_PASSWORD?.trim();
   return s && s.length >= 8 ? s : null;
 }
 
@@ -21,7 +26,7 @@ export function isAdminSessionConfigured(): boolean {
 export function createAdminSessionToken(): string {
   const secret = getSigningSecret();
   if (!secret) {
-    throw new Error("ADMIN_SESSION_SECRET or ADMIN_PASSWORD must be set (min 12 chars)");
+    throw new Error("Admin session signing secret is not configured (min 8 characters).");
   }
   const exp = Date.now() + MAX_AGE_MS;
   const payload = Buffer.from(JSON.stringify({ exp, v: 1 }), "utf8").toString("base64url");

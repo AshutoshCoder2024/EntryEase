@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Session signing is not configured. Set ADMIN_SESSION_SECRET (recommended) or ensure ADMIN_PASSWORD is at least 8 characters.",
+            "Session signing is not configured. Set ADMIN_SESSION_SECRET, or ADMIN_PASSWORD / NEXT_PUBLIC_ADMIN_PASSWORD with at least 8 characters.",
         },
         { status: 503 }
       );
