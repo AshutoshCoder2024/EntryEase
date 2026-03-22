@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import QRCode from "qrcode";
-import { ROBOTICS_EVENT_NAME, supabase } from "@/lib/supabaseClient";
+import { ROBOTICS_EVENT_NAME } from "@/lib/supabaseClient";
 
 type TicketRow = {
   ticket_id: string;
@@ -25,34 +25,48 @@ export default function TicketPage() {
   const qrRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
-      const { data, error } = await supabase
-        .from("event_registrations")
-        .select("*")
-        .eq("ticket_id", ticketId)
-        .single();
+      try {
+        const res = await fetch(`/api/ticket/${encodeURIComponent(ticketId)}`, {
+          cache: "no-store",
+        });
+        const json = (await res.json()) as { ticket?: TicketRow; error?: string };
 
-        if (error || !data) {
-        console.error(error);
-        setError("Invalid or Unauthorized Ticket");
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setError(
+            res.status === 429
+              ? "Too many requests. Please wait a moment and refresh."
+              : "Invalid or Unauthorized Ticket"
+          );
+          setLoading(false);
+          return;
+        }
+
+        if (!json.ticket) {
+          setError("Invalid or Unauthorized Ticket");
+          setLoading(false);
+          return;
+        }
+
+        setTicket(json.ticket);
         setLoading(false);
-        return;
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) {
+          setError("Something went wrong while loading the ticket.");
+          setLoading(false);
+        }
       }
-
-      if ((data as any).payment_status !== "verified") {
-        setError("Invalid or Unauthorized Ticket");
-        setLoading(false);
-        return;
-      }
-
-      setTicket(data as TicketRow);
-      setLoading(false);
     }
 
-    load().catch(() => {
-      setError("Something went wrong while loading the ticket.");
-      setLoading(false);
-    });
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [ticketId]);
 
   useEffect(() => {

@@ -3,17 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { ROBOTICS_EVENT_CAPACITY } from "@/lib/event-config";
 import { validateRegistrationInput, type RegistrationInput } from "@/lib/registration-validation";
 import { checkRateLimit, getRegistrationRateLimitConfig } from "@/lib/rate-limit";
-
-function getClientIp(req: NextRequest): string {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  const real = req.headers.get("x-real-ip");
-  if (real?.trim()) return real.trim();
-  return "unknown";
-}
+import { getClientIp } from "@/lib/get-client-ip";
 
 /** Honeypot / bot fields — must be empty */
 function isBotPayload(body: Record<string, unknown>): boolean {

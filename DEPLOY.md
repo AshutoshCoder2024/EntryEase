@@ -18,9 +18,10 @@ Everything deploys together to one host (e.g. **Vercel**). No separate backend s
 4. [Environment variables](#4-environment-variables)
 5. [After first deploy](#5-after-first-deploy)
 6. [Admin panel access](#6-admin-panel-access)
-7. [Custom domain (optional)](#7-custom-domain-optional)
-8. [Troubleshooting](#8-troubleshooting)
-9. [Deployment checklist](#9-deployment-checklist)
+7. [Public ticket links (no login)](#7-public-ticket-links-no-login)
+8. [Custom domain (optional)](#8-custom-domain-optional)
+9. [Troubleshooting](#9-troubleshooting)
+10. [Deployment checklist](#10-deployment-checklist)
 
 ---
 
@@ -163,7 +164,7 @@ ADMIN_PASSWORD=YourStrongAdminPassword123!
    - The email link opens the ticket page with the QR code.
 5. **Test scanner**: On a phone or laptop with camera, open **Scan QR Ticket** from the admin dashboard and scan the test ticket QR; first scan should show “Entry Successful”, second “Ticket Already Used”.
 
-If anything fails, see [Troubleshooting](#8-troubleshooting).
+If anything fails, see [Troubleshooting](#9-troubleshooting).
 
 ---
 
@@ -185,7 +186,16 @@ Access is controlled only by the shared password (stored in env). Keep it strong
 
 ---
 
-## 7. Custom domain (optional)
+## 7. Public ticket links (no login)
+
+Ticket URLs (`/ticket/EVT-…`) are **public**: anyone with the link can open them; no Vercel account or admin login is required.
+
+- **Code:** The app loads ticket data via **`GET /api/ticket/[ticketId]`** (server-side, service role). Visitors do **not** need Supabase `anon` SELECT on `event_registrations` for this page.
+- **Vercel:** If the site asks for a **Vercel login**, that is **Deployment Protection** on the project (Preview or Production). Turn it off under **Project → Settings → Deployment Protection** for the URL you share with attendees, or they cannot open links without signing in to Vercel.
+
+---
+
+## 8. Custom domain (optional)
 
 1. In Vercel: **Project → Settings → Domains**.
 2. Add your domain (e.g. `events.yourcollege.edu`).
@@ -194,7 +204,7 @@ Access is controlled only by the shared password (stored in env). Keep it strong
 
 ---
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 ### Build fails on Vercel
 
@@ -223,7 +233,7 @@ Access is controlled only by the shared password (stored in env). Keep it strong
 
 ---
 
-## 9. Deployment checklist
+## 10. Deployment checklist
 
 Use this before and after going live:
 
