@@ -14,6 +14,7 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [department, setDepartment] = useState("");
+  const [otherCourse, setOtherCourse] = useState("");
   const [year, setYear] = useState("");
   const [rollNumber, setRollNumber] = useState("");
   const [utrNumber, setUtrNumber] = useState("");
@@ -50,7 +51,7 @@ export default function Home() {
       fullName,
       email,
       phone,
-      department,
+      department: department === "Other" ? otherCourse : department,
       year,
       rollNumber,
       utrNumber,
@@ -59,6 +60,10 @@ export default function Home() {
     });
     if (!result.ok) {
       setErrors(result.errors);
+      return false;
+    }
+    if (department === "Other" && !otherCourse.trim()) {
+      setErrors({ departmentOther: "Please enter your course name" });
       return false;
     }
     setErrors({});
@@ -92,7 +97,7 @@ export default function Home() {
           fullName,
           email,
           phone,
-          department,
+          department: department === "Other" ? otherCourse : department,
           year,
           rollNumber,
           utrNumber,
@@ -314,18 +319,39 @@ export default function Home() {
                     <label className="mb-1.5 block text-sm font-medium text-slate-300">Department</label>
                     <select
                       value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
+                      onChange={(e) => {
+                        setDepartment(e.target.value);
+                        if (e.target.value !== "Other") setOtherCourse("");
+                      }}
                       className="w-full rounded-xl border border-slate-600/80 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
                     >
                       <option value="">Select</option>
-                      <option value="BCA">BCA</option>
-                      <option value="BBA">BBA</option>
-                      <option value="B.Tech">B.Tech</option>
-                      <option value="MCA">MCA</option>
+                      <option value="Bsc-IT">Bsc-IT</option>
+                      <option value="Bsc-CA">BBA</option>
+                      <option value="BCA">B.Tech</option>
+                      <option value="PHY">MCA</option>
+                      <option value="MAt">MCA</option>
                       <option value="Other">Other</option>
                     </select>
                     {errors.department && <p className="mt-1.5 text-xs text-rose-400">{errors.department}</p>}
                   </div>
+                  {department === "Other" && (
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                        Course Name <span className="text-rose-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={otherCourse}
+                        onChange={(e) => setOtherCourse(e.target.value)}
+                        className="w-full rounded-xl border border-slate-600/80 bg-slate-800/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
+                        placeholder="Enter your course"
+                      />
+                      {errors.departmentOther && (
+                        <p className="mt-1.5 text-xs text-rose-400">{errors.departmentOther}</p>
+                      )}
+                    </div>
+                  )}
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-300">Year</label>
                     <select

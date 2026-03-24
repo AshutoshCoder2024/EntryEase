@@ -72,7 +72,12 @@ export function validateRegistrationInput(input: RegistrationInput): {
   }
 
   if (!ALLOWED_DEPARTMENTS.has(departmentRaw)) {
-    errors.department = "Invalid department selection";
+    // Allow custom course names when UI sends "Other" details as department text.
+    if (!departmentRaw.trim()) {
+      errors.department = "Invalid department selection";
+    } else if (departmentRaw.trim().length > 80) {
+      errors.department = "Course/department is too long";
+    }
   }
   if (!ALLOWED_YEARS.has(yearRaw)) {
     errors.year = "Invalid year selection";
