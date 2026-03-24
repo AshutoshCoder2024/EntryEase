@@ -24,6 +24,7 @@ export default function Home() {
   const [status, setStatus] = useState<{ message: string; variant: StatusVariant } | null>(null);
   const [loading, setLoading] = useState(false);
   const [remainingSeats, setRemainingSeats] = useState<number | null>(null);
+  const [showUpiQr, setShowUpiQr] = useState(false);
   const submitGuardRef = useRef(false);
   /** Honeypot — must stay empty (bots often fill hidden fields). */
   const [websiteHp, setWebsiteHp] = useState("");
@@ -189,23 +190,32 @@ export default function Home() {
               <p className="mt-2 text-sm text-slate-400">
                 Scan the QR code or use UPI ID: <strong className="text-slate-200">{UPI_ID}</strong>
               </p>
-              <div className="mt-5 flex justify-center rounded-2xl border border-white/10 bg-white p-4 shadow-soft sm:p-5">
-                <img
-                  src="/upiqr1.png"
-                  alt="UPI Payment QR Code"
-                  className="h-44 w-44 object-contain sm:h-48 sm:w-48"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                    const parent = (e.target as HTMLImageElement).parentElement;
-                    if (parent) {
-                      const fallback = document.createElement("div");
-                      fallback.className = "text-center text-xs text-slate-500 py-8";
-                      fallback.innerHTML = `Place your UPI QR at<br/><code class="text-slate-400">public/upiqr1.png</code><br/><br/>Or pay to: ${UPI_ID}`;
-                      parent.appendChild(fallback);
-                    }
-                  }}
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowUpiQr((prev) => !prev)}
+                className="mt-5 w-full rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 py-2.5 text-sm font-medium text-indigo-200 transition hover:bg-indigo-500/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+              >
+                {showUpiQr ? "Hide UPI QR" : "Show UPI QR"}
+              </button>
+              {showUpiQr && (
+                <div className="mt-4 flex justify-center rounded-2xl border border-white/10 bg-white p-4 shadow-soft sm:p-5">
+                  <img
+                    src="/upiqr1.png"
+                    alt="UPI Payment QR Code"
+                    className="h-44 w-44 object-contain sm:h-48 sm:w-48"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                      const parent = (e.target as HTMLImageElement).parentElement;
+                      if (parent) {
+                        const fallback = document.createElement("div");
+                        fallback.className = "text-center text-xs text-slate-500 py-8";
+                        fallback.innerHTML = `Place your UPI QR at<br/><code class="text-slate-400">public/upiqr1.png</code><br/><br/>Or pay to: ${UPI_ID}`;
+                        parent.appendChild(fallback);
+                      }
+                    }}
+                  />
+                </div>
+              )}
               <p className="mt-3 text-center font-mono text-sm text-slate-300 sm:mt-4">
                 {UPI_ID}
               </p>
@@ -222,6 +232,11 @@ export default function Home() {
                 <p className="mt-1 text-sm text-slate-400">
                   Fill details, pay ₹{REGISTRATION_FEE} via UPI, then enter UTR below.
                 </p>
+                <div className="mt-3 space-y-1 rounded-xl border border-white/10 bg-slate-800/40 p-3 text-xs text-slate-300 sm:text-sm">
+                  <p>📅 Date: 13 April 2026</p>
+                  <p>⏰ Time: 11:00 AM - 2:00 PM</p>
+                  <p>📍 Venue: Fr. De Brouwer Auditorium Hall</p>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-300">
@@ -344,33 +359,44 @@ export default function Home() {
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Payment (UPI)
                 </h3>
-                {/* Mobile: show QR in payment section before instructions */}
-                <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-slate-800/40 p-4 lg:hidden">
-                  <p className="mb-3 text-center text-xs text-slate-400">Scan to pay</p>
-                  <div className="flex justify-center rounded-xl border border-white/10 bg-white p-3">
-                    <img
-                      src="/upiqr1.png"
-                      alt="UPI Payment QR Code"
-                      className="h-40 w-40 object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                        const parent = (e.target as HTMLImageElement).parentElement;
-                        if (parent) {
-                          const fallback = document.createElement("div");
-                          fallback.className = "text-center text-xs text-slate-500 py-6";
-                          fallback.innerHTML = `Or pay to: ${UPI_ID}`;
-                          parent.appendChild(fallback);
-                        }
-                      }}
-                    />
-                  </div>
-                  <p className="mt-2 font-mono text-sm text-slate-300">{UPI_ID}</p>
+                {/* Mobile: toggle QR visibility in payment section */}
+                <div className="rounded-2xl border border-white/10 bg-slate-800/40 p-4 lg:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowUpiQr((prev) => !prev)}
+                    className="w-full rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 py-2.5 text-sm font-medium text-indigo-200 transition hover:bg-indigo-500/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                  >
+                    {showUpiQr ? "Hide UPI QR" : "Show UPI QR"}
+                  </button>
+                  {showUpiQr && (
+                    <div className="mt-3 flex flex-col items-center">
+                      <p className="mb-3 text-center text-xs text-slate-400">Scan to pay</p>
+                      <div className="flex justify-center rounded-xl border border-white/10 bg-white p-3">
+                        <img
+                          src="/upiqr1.png"
+                          alt="UPI Payment QR Code"
+                          className="h-40 w-40 object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                            const parent = (e.target as HTMLImageElement).parentElement;
+                            if (parent) {
+                              const fallback = document.createElement("div");
+                              fallback.className = "text-center text-xs text-slate-500 py-6";
+                              fallback.innerHTML = `Or pay to: ${UPI_ID}`;
+                              parent.appendChild(fallback);
+                            }
+                          }}
+                        />
+                      </div>
+                      <p className="mt-2 font-mono text-sm text-slate-300">{UPI_ID}</p>
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
                   <p className="text-sm text-slate-300">
                     1. Pay ₹{REGISTRATION_FEE} via UPI to <strong className="text-slate-200">{UPI_ID}</strong>
-                    <span className="hidden lg:inline"> (scan QR on the left).</span>
-                    <span className="lg:hidden"> (scan QR above).</span>
+                    <span className="hidden lg:inline"> (click Show UPI QR on the left).</span>
+                    <span className="lg:hidden"> (click Show UPI QR above).</span>
                   </p>
                   <p className="mt-2 text-sm text-slate-300">
                     2. After payment, you&apos;ll get a <strong className="text-slate-200">UTR / transaction ID</strong>. Enter it below.

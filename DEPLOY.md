@@ -231,6 +231,25 @@ Ticket URLs (`/ticket/EVT-…`) are **public**: anyone with the link can open th
 
 - Set **NEXT_PUBLIC_BASE_URL** to the URL students actually use (e.g. `https://your-app.vercel.app` or your custom domain), then redeploy.
 
+### Users see “Sign in to Vercel” / Vercel login when opening `/ticket/...` (critical)
+
+That screen is **Vercel Deployment Protection**, not this Next.js app. This repo has **no** root `middleware.ts` and does not redirect visitors to Vercel. Dynamic routes like `/ticket/[ticketId]` work on Vercel; the block happens **before** your code runs.
+
+**Fix it in the Vercel dashboard (required):**
+
+1. Open [vercel.com/dashboard](https://vercel.com/dashboard) → select your **project**.
+2. Go to **Settings** → **Deployment Protection** (under Security).
+3. Adjust **who must authenticate**:
+   - **Vercel Authentication**: For a public event site, this must **not** apply to the URLs you give attendees. If it is enabled for **Production** or **All deployments**, turn it off for production, or narrow scope to **Preview only** (wording varies by plan).
+   - **Password Protection**: Disable for Production if you set a site-wide password.
+4. **Production URL vs Preview URL**: Links like `https://<project>-<branch>-<team>.vercel.app` are often **preview** deployments and may stay protected. Use the **Production** deployment URL (from the **Deployments** tab, branch marked Production) or your **custom domain** in emails (`NEXT_PUBLIC_BASE_URL`).
+5. **Team / Enterprise**: Check **Team Settings → Security** for org-wide rules that force protection on all projects.
+6. Verify in an **incognito** window with no Vercel session.
+
+**Docs:** [Deployment Protection](https://vercel.com/docs/security/deployment-protection) · [Vercel Authentication](https://vercel.com/docs/deployment-protection/methods-to-protect-deployments/vercel-authentication)
+
+**App-side (already in this repo):** Tickets load via public **`GET /api/ticket/[ticketId]`**; no login cookie is required for that route.
+
 ---
 
 ## 10. Deployment checklist
@@ -252,6 +271,7 @@ Use this before and after going live:
 
 **After deploy**
 
+- [ ] **Deployment Protection**: Production (and ticket links) open **without** Vercel login in a private/incognito window
 - [ ] `NEXT_PUBLIC_BASE_URL` set to the real production URL and redeployed if needed
 - [ ] Test: registration → admin verify → email received → ticket link opens
 - [ ] Test: admin login → dashboard → Scan QR Ticket → scan works and shows correct statuses
