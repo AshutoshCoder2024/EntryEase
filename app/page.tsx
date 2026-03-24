@@ -473,7 +473,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-white/5 bg-slate-950/60 px-4 py-4 text-center text-xs text-slate-500 backdrop-blur-sm">
-        Robotics Challenge 2026 · UPI Payment &amp; QR Ticket System
+        {ROBOTICS_EVENT_NAME} · UPI Payment &amp; QR Ticket System
       </footer>
     </div>
   );

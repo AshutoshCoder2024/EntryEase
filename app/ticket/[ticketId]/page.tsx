@@ -172,7 +172,7 @@ export default function TicketPage() {
           </div>
           <div className="flex-1 text-center">
             <h1 className="text-base font-semibold tracking-tight text-white sm:text-lg">
-              Robotics Challenge 2026 · Digital Pass
+              {ROBOTICS_EVENT_NAME} · Digital Pass
             </h1>
             <p className="mt-0.5 text-xs text-slate-400">
               Show this QR ticket at the entrance
@@ -213,7 +213,13 @@ export default function TicketPage() {
                     {ROBOTICS_EVENT_NAME}
                   </h2>
                   <p className="mt-1 text-xs text-slate-400">
-                    Venue: Main Auditorium · Reporting 30 mins before start
+                    📅 Date: 13 April 2026
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    ⏰ Time: 11:00 AM - 2:00 PM
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    📍 Venue: Fr. De Brouwer Auditorium Hall
                   </p>
 
                   <div className="mt-4 grid gap-4 border-t border-slate-700/50 pt-4 sm:grid-cols-2">
@@ -331,6 +337,9 @@ export default function TicketPage() {
                     Add this page to your home screen for quick access.
                   </p>
                 </div>
+                <p className="border-t border-slate-700/50 pt-3 text-xs text-slate-400">
+                  📞 Help: +91 9341013395
+                </p>
               </div>
             )}
           </div>

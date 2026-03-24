@@ -9,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Robotics Challenge 2026 Registration",
+  title: "Living with AI Registration",
   description:
-    "College robotics event registration and QR ticket booking system powered by Next.js.",
+    "College event registration and QR ticket booking system powered by Next.js.",
 };
 
 export default function RootLayout({
