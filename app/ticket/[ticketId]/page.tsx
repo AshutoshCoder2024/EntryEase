@@ -8,8 +8,7 @@ import { ROBOTICS_EVENT_NAME } from "@/lib/supabaseClient";
 type TicketRow = {
   ticket_id: string;
   name: string;
-  email: string | null;
-  phone: string | null;
+  email_masked: string | null;
   department: string | null;
   entry_status: string;
 };
@@ -86,10 +85,17 @@ export default function TicketPage() {
           errorCorrectionLevel: 'H'
         });
 
-        qrRef.current!.innerHTML = `<img src="${qrDataUrl}" alt="QR Code" style="width: 100%; height: auto; max-width: 280px;" />`;
+        // Avoid innerHTML to remove any chance of DOM-based injection.
+        const img = document.createElement("img");
+        img.src = qrDataUrl;
+        img.alt = "QR Code";
+        img.style.width = "100%";
+        img.style.height = "auto";
+        img.style.maxWidth = "280px";
+        qrRef.current!.replaceChildren(img);
       } catch (err) {
         console.error('QR generation failed:', err);
-        qrRef.current!.innerHTML = '<p class="text-red-400">Failed to generate QR code</p>';
+        qrRef.current!.textContent = "Failed to generate QR code";
       }
     };
 
@@ -244,7 +250,7 @@ export default function TicketPage() {
                         Email
                       </p>
                       <p className="mt-1 truncate text-sm text-slate-300">
-                        {ticket.email || "—"}
+                        {ticket.email_masked || "—"}
                       </p>
                     </div>
                     <div>

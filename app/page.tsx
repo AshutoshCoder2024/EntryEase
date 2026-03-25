@@ -43,7 +43,7 @@ export default function Home() {
       }
     }
 
-    fetchCapacity().catch(() => {});
+    fetchCapacity().catch(() => { });
   }, []);
 
   function validate() {
@@ -107,11 +107,11 @@ export default function Home() {
         }),
       });
 
-      const json = (await res.json()) as { error?: string; errors?: Record<string, string> };
+      const json = (await res.json()) as { error?: string };
 
-      if (res.status === 422 && json.errors) {
-        setErrors(json.errors);
-        showStatus("Please fix the highlighted fields and try again.", "error");
+      if (res.status === 422) {
+        // Server returns generic errors to avoid leaking validation rules.
+        showStatus(json.error ?? "Invalid input. Please check the form and try again.", "error");
         return;
       }
 
@@ -154,7 +154,7 @@ export default function Home() {
       ? "Checking seats..."
       : remainingSeats <= 0
         ? "Registration Closed — Event Full"
-        : `${remainingSeats} of ${ROBOTICS_EVENT_CAPACITY} seats remaining`;
+        : `  Only ${remainingSeats} seats left out of ${ROBOTICS_EVENT_CAPACITY} `;
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950/20 text-slate-100">
@@ -172,8 +172,7 @@ export default function Home() {
               {ROBOTICS_EVENT_NAME}
             </h1>
             <p className="mt-1 text-xs text-slate-400 sm:text-sm">
-              Pay via UPI &amp; enter UTR · Ticket sent to your email after verification
-            </p>
+              Explore the future of AI & Robotics · Register now to secure your entry            </p>
           </div>
           <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5">
             <img
@@ -189,45 +188,45 @@ export default function Home() {
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 lg:flex-row">
           {/* UPI QR & ID — visible on all devices (mobile: top, desktop: left) */}
           <section className="hidden w-full shrink-0 rounded-3xl border border-white/10 bg-slate-900/40 p-6 shadow-soft-lg backdrop-blur-xl lg:block lg:max-w-sm">            <div>
-              <h2 className="text-xl font-semibold text-white">
-                Pay via UPI
-              </h2>
-              <p className="mt-2 text-sm text-slate-400">
-                Scan the QR code or use UPI ID: <strong className="text-slate-200">{UPI_ID}</strong>
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowUpiQr((prev) => !prev)}
-                className="mt-5 w-full rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 py-2.5 text-sm font-medium text-indigo-200 transition hover:bg-indigo-500/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
-              >
-                {showUpiQr ? "Hide UPI QR" : "Show UPI QR"}
-              </button>
-              {showUpiQr && (
-                <div className="mt-4 flex justify-center rounded-2xl border border-white/10 bg-white p-4 shadow-soft sm:p-5">
-                  <img
-                    src="/upiqr1.png"
-                    alt="UPI Payment QR Code"
-                    className="h-44 w-44 object-contain sm:h-48 sm:w-48"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                      const parent = (e.target as HTMLImageElement).parentElement;
-                      if (parent) {
-                        const fallback = document.createElement("div");
-                        fallback.className = "text-center text-xs text-slate-500 py-8";
-                        fallback.innerHTML = `Place your UPI QR at<br/><code class="text-slate-400">public/upiqr1.png</code><br/><br/>Or pay to: ${UPI_ID}`;
-                        parent.appendChild(fallback);
-                      }
-                    }}
-                  />
-                </div>
-              )}
-              <p className="mt-3 text-center font-mono text-sm text-slate-300 sm:mt-4">
-                {UPI_ID}
-              </p>
-              <p className="mt-2 text-center text-xs text-slate-500">
-                Amount: ₹{REGISTRATION_FEE}. After payment, enter the UTR number in the form.
-              </p>
-            </div>
+            <h2 className="text-xl font-semibold text-white">
+              Pay via UPI
+            </h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Scan the QR code or use UPI ID: <strong className="text-slate-200">{UPI_ID}</strong>
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowUpiQr((prev) => !prev)}
+              className="mt-5 w-full rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 py-2.5 text-sm font-medium text-indigo-200 transition hover:bg-indigo-500/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+            >
+              {showUpiQr ? "Hide UPI QR" : "Show UPI QR"}
+            </button>
+            {showUpiQr && (
+              <div className="mt-4 flex justify-center rounded-2xl border border-white/10 bg-white p-4 shadow-soft sm:p-5">
+                <img
+                  src="/upiqr1.png"
+                  alt="UPI Payment QR Code"
+                  className="h-44 w-44 object-contain sm:h-48 sm:w-48"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                    const parent = (e.target as HTMLImageElement).parentElement;
+                    if (parent) {
+                      const fallback = document.createElement("div");
+                      fallback.className = "text-center text-xs text-slate-500 py-8";
+                      fallback.innerHTML = `Place your UPI QR at<br/><code class="text-slate-400">public/upiqr1.png</code><br/><br/>Or pay to: ${UPI_ID}`;
+                      parent.appendChild(fallback);
+                    }
+                  }}
+                />
+              </div>
+            )}
+            <p className="mt-3 text-center font-mono text-sm text-slate-300 sm:mt-4">
+              {UPI_ID}
+            </p>
+            <p className="mt-2 text-center text-xs text-slate-500">
+              Amount: ₹{REGISTRATION_FEE}. After payment, copy your UTR / Transaction ID and enter it below
+            </p>
+          </div>
           </section>
 
           <section className="w-full rounded-3xl border border-white/10 bg-slate-900/40 p-6 shadow-soft-lg backdrop-blur-xl sm:p-7 lg:p-8">
@@ -235,7 +234,7 @@ export default function Home() {
               <div>
                 <h2 className="text-xl font-semibold text-white sm:text-2xl">Event Registration</h2>
                 <p className="mt-1 text-sm text-slate-400">
-                  Fill details, pay ₹{REGISTRATION_FEE} via UPI, then enter UTR below.
+                  Fill your details → Complete payment → Enter UTR to confirm registration
                 </p>
                 <div className="mt-3 space-y-1 rounded-xl border border-white/10 bg-slate-800/40 p-3 text-xs text-slate-300 sm:text-sm">
                   <p>📅 Date: 13 April 2026</p>
@@ -425,7 +424,7 @@ export default function Home() {
                     <span className="lg:hidden"> (click Show UPI QR above).</span>
                   </p>
                   <p className="mt-2 text-sm text-slate-300">
-                    2. After payment, you&apos;ll get a <strong className="text-slate-200">UTR / transaction ID</strong>. Enter it below.
+                    2. After payment, you&apos;ll get a <strong className="text-slate-200">UTR / Transaction ID (UPI Reference Number)</strong>. Enter it below.
                   </p>
                 </div>
                 <div>
@@ -499,7 +498,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-white/5 bg-slate-950/60 px-4 py-4 text-center text-xs text-slate-500 backdrop-blur-sm">
-        {ROBOTICS_EVENT_NAME} · UPI Payment &amp; QR Ticket System
+        {ROBOTICS_EVENT_NAME} · Register, Pay & Get Your QR Ticket
       </footer>
     </div>
   );

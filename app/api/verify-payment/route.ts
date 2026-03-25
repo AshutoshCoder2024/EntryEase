@@ -1,55 +1,99 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { nanoid } from "nanoid";
+import { createHash } from "crypto";
+import { z } from "zod";
 import { sendTicketEmail } from "@/lib/email";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { ROBOTICS_EVENT_CAPACITY } from "@/lib/event-config";
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from "@/lib/admin-session";
+import { checkRateLimit, getRegistrationRateLimitConfig } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-client-ip";
 
 const TICKET_PREFIX = "EVT-";
 
-function parseRegistrationId(body: unknown): number | null {
-  if (body === null || typeof body !== "object") return null;
-  const id = (body as { registrationId?: unknown }).registrationId;
-  if (typeof id === "number" && Number.isInteger(id) && id > 0) return id;
-  if (typeof id === "string" && /^\d+$/.test(id)) {
-    const n = Number(id);
-    if (Number.isInteger(n) && n > 0) return n;
-  }
-  return null;
+const RegistrationIdSchema = z.preprocess((v) => {
+  if (typeof v === "number") return v;
+  if (typeof v === "string" && /^\d+$/.test(v.trim())) return Number(v.trim());
+  return v;
+}, z.number().int().positive());
+
+const VerifyPaymentSchema = z
+  .object({
+    registrationId: RegistrationIdSchema,
+  })
+  .strip();
+
+function fingerprintFromReq(req: NextRequest): string {
+  const ua = (req.headers.get("user-agent") ?? "").slice(0, 200);
+  const acceptLang = (req.headers.get("accept-language") ?? "").slice(0, 100);
+  return createHash("sha256").update(`${ua}|${acceptLang}`).digest("hex").slice(0, 16);
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const contentType = req.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
+
+    const contentLength = Number(req.headers.get("content-length") ?? 0);
+    const MAX_BODY_BYTES = Math.max(
+      2048,
+      Math.min(8192, Number(process.env.VERIFY_PAYMENT_MAX_BODY_BYTES ?? "4096"))
+    );
+    if (contentLength > MAX_BODY_BYTES) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 413 });
+    }
+
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
     if (!verifyAdminSessionToken(sessionToken)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Anti-spam (admin-only endpoint still needs protection).
+    const ip = getClientIp(req);
+    const fp = fingerprintFromReq(req);
+    const { limit, windowMs } = getRegistrationRateLimitConfig();
+    const rl = checkRateLimit(`verify-payment:${ip}:${fp}`, Math.max(1, Math.floor(limit / 2)), windowMs);
+    const cooldownMs = Math.max(
+      10_000,
+      Math.min(180_000, Number(process.env.VERIFY_PAYMENT_COOLDOWN_MS ?? "30000"))
+    );
+    const cooldown = checkRateLimit(`verify-payment-cooldown:${ip}:${fp}`, 1, cooldownMs);
+
+    if (!rl.ok || !cooldown.ok) {
+      return NextResponse.json(
+        { error: "Too many requests. Try again shortly." },
+        { status: 429 }
+      );
+    }
+
     const supabase = getSupabaseAdmin();
     if (!supabase) {
-      console.error("[verify-payment] SUPABASE_SERVICE_ROLE_KEY or URL missing");
-      return NextResponse.json(
-        { error: "Server misconfigured: missing Supabase service credentials" },
-        { status: 500 }
-      );
+      console.error("[verify-payment] missing supabase admin client");
+      return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
 
-    let json: unknown;
+    let body: unknown;
     try {
-      json = await req.json();
+      const buf = await req.arrayBuffer();
+      if (buf.byteLength > MAX_BODY_BYTES) {
+        return NextResponse.json({ error: "Invalid request" }, { status: 413 });
+      }
+      const text = new TextDecoder().decode(buf);
+      body = JSON.parse(text) as unknown;
     } catch {
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    const registrationId = parseRegistrationId(json);
-    if (registrationId === null) {
-      return NextResponse.json(
-        { error: "registrationId must be a positive integer" },
-        { status: 400 }
-      );
+    const parsed = VerifyPaymentSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
+
+    const registrationId = parsed.data.registrationId;
 
     const { data: row, error: fetchError } = await supabase
       .from("event_registrations")
@@ -60,29 +104,33 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (fetchError || !row) {
-      console.error("[verify-payment] Registration not found:", fetchError?.message ?? registrationId);
-      return NextResponse.json({ error: "Registration not found" }, { status: 404 });
+      return NextResponse.json({ error: "Invalid registration" }, { status: 404 });
     }
 
     if (row.payment_status === "verified" && row.ticket_id) {
       return NextResponse.json({
         success: true,
         ticketId: row.ticket_id,
-        email: row.email,
         emailSent: false,
         alreadyVerified: true,
       });
     }
 
     if (row.payment_status === "verified") {
+      // Should not happen in normal flow, but keep the response shape stable.
       return NextResponse.json(
-        { error: "Payment already verified", ticketId: row.ticket_id },
-        { status: 400 }
+        {
+          success: true,
+          ticketId: row.ticket_id ?? null,
+          emailSent: false,
+          alreadyVerified: true,
+        },
+        { status: 200 }
       );
     }
 
     if (row.payment_status === "rejected") {
-      return NextResponse.json({ error: "Payment was rejected" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid registration" }, { status: 400 });
     }
 
     const { count: verifiedCount, error: countError } = await supabase
@@ -91,14 +139,14 @@ export async function POST(req: NextRequest) {
       .eq("payment_status", "verified");
 
     if (countError) {
-      console.error("[verify-payment] Capacity count failed:", countError.message);
-      return NextResponse.json({ error: "Could not verify event capacity" }, { status: 500 });
+      console.error("[verify-payment] capacity count failed");
+      return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
 
     const used = verifiedCount ?? 0;
     if (used >= ROBOTICS_EVENT_CAPACITY) {
       return NextResponse.json(
-        { error: "Event is full — cannot verify more payments" },
+        { error: "Event is full" },
         { status: 409 }
       );
     }
@@ -118,8 +166,8 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (updateError) {
-      console.error("[verify-payment] Update failed:", updateError.message);
-      return NextResponse.json({ error: "Failed to update registration" }, { status: 500 });
+      console.error("[verify-payment] update failed");
+      return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
 
     if (!updated?.ticket_id) {
@@ -133,16 +181,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           success: true,
           ticketId: again.ticket_id,
-          email: row.email,
           emailSent: false,
           alreadyVerified: true,
         });
       }
 
-      return NextResponse.json(
-        { error: "Could not verify — registration may have changed. Refresh and try again." },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: "Could not verify request" }, { status: 409 });
     }
 
     ticketId = updated.ticket_id;
@@ -154,25 +198,20 @@ export async function POST(req: NextRequest) {
     });
 
     if (!emailResult.success) {
-      console.error("[verify-payment] Email send failed:", emailResult.error);
       return NextResponse.json({
         success: true,
         ticketId,
-        email: row.email,
         emailSent: false,
-        emailError: emailResult.error,
       });
     }
 
     return NextResponse.json({
       success: true,
       ticketId,
-      email: row.email,
       emailSent: true,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[verify-payment] Error:", message);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("[verify-payment] unhandled_error", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
