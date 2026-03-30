@@ -7,7 +7,7 @@ import { sendTicketEmail } from "@/lib/email";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { ROBOTICS_EVENT_CAPACITY } from "@/lib/event-config";
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from "@/lib/admin-session";
-import { checkRateLimit, getRegistrationRateLimitConfig } from "@/lib/rate-limit";
+import { checkRateLimit, getVerifyPaymentRateLimitConfig } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/get-client-ip";
 import { isTrustedAdminPost } from "@/lib/csrf";
 
@@ -57,18 +57,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Anti-spam (admin-only endpoint still needs protection).
+    // Light abuse cap only (session is already verified). Do not reuse registration limits or
+    // per-click cooldowns — those block legitimate bulk verification from the admin dashboard.
     const ip = getClientIp(req);
     const fp = fingerprintFromReq(req);
-    const { limit, windowMs } = getRegistrationRateLimitConfig();
-    const rl = checkRateLimit(`verify-payment:${ip}:${fp}`, Math.max(1, Math.floor(limit / 2)), windowMs);
-    const cooldownMs = Math.max(
-      10_000,
-      Math.min(180_000, Number(process.env.VERIFY_PAYMENT_COOLDOWN_MS ?? "30000"))
-    );
-    const cooldown = checkRateLimit(`verify-payment-cooldown:${ip}:${fp}`, 1, cooldownMs);
+    const { limit, windowMs } = getVerifyPaymentRateLimitConfig();
+    const rl = checkRateLimit(`verify-payment:${ip}:${fp}`, limit, windowMs);
 
-    if (!rl.ok || !cooldown.ok) {
+    if (!rl.ok) {
       return NextResponse.json(
         { error: "Too many requests. Try again shortly." },
         { status: 429 }

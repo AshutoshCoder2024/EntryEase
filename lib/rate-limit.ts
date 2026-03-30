@@ -57,3 +57,16 @@ export function getRegistrationRateLimitConfig(): { limit: number; windowMs: num
   );
   return { limit, windowMs };
 }
+
+/**
+ * Admin verify-payment: separate from public registration limits.
+ * Defaults allow many verifications per minute (authenticated admin session is the real gate).
+ */
+export function getVerifyPaymentRateLimitConfig(): { limit: number; windowMs: number } {
+  const limit = Math.max(20, Math.min(500, Number(process.env.VERIFY_PAYMENT_RATE_LIMIT_MAX) || 120));
+  const windowMs = Math.max(
+    10_000,
+    Math.min(600_000, Number(process.env.VERIFY_PAYMENT_RATE_LIMIT_WINDOW_MS) || 60_000)
+  );
+  return { limit, windowMs };
+}
