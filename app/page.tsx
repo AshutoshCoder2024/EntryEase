@@ -352,8 +352,8 @@ export default function Home() {
                       <option value="Bsc-IT">Bsc-IT</option>
                       <option value="Bsc-CA">Bsc-CA</option>
                       <option value="BCA">BCA</option>
-                      <option value="PHY">PHY</option>
-                      <option value="MAt">MAt</option>
+                      <option value="Physics">Physics</option>
+                      <option value="Mathematics">Mathematics</option>
                       <option value="Other">Other</option>
                     </select>
                     {errors.department && <p className="mt-1.5 text-xs text-rose-400">{errors.department}</p>}
