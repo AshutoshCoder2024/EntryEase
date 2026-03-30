@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Html5Qrcode } from "html5-qrcode";
-import { ROBOTICS_EVENT_NAME, supabase } from "@/lib/supabaseClient";
+import { ROBOTICS_EVENT_NAME } from "@/lib/supabaseClient";
 
 type ScanVariant = "info" | "success" | "warning" | "error";
 
@@ -19,25 +19,16 @@ export default function AdminScanPage() {
   const [scanStatus, setScanStatus] = useState<{
     message: string;
     variant: ScanVariant;
-    detailHtml: string;
+    details: string[];
   }>({
     message: "Scanning…",
     variant: "info",
-    detailHtml: "",
+    details: [],
   });
 
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const scanLockRef = useRef(false);
   const requestPermissionRef = useRef<(() => void) | null>(null);
-
-  function escapeHtml(s: string): string {
-    return s
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -67,7 +58,7 @@ export default function AdminScanPage() {
     scanLockRef.current = false;
     setPhase("permission");
     setPermissionState("idle");
-    setScanStatus({ message: "Camera access needed to scan tickets", variant: "info", detailHtml: "" });
+    setScanStatus({ message: "Camera access needed to scan tickets", variant: "info", details: [] });
 
     let html5QrCode: Html5Qrcode | null = null;
     html5QrCodeRef.current = null;
@@ -79,7 +70,7 @@ export default function AdminScanPage() {
           setScanStatus({
             message: "Camera not supported",
             variant: "error",
-            detailHtml: "This device or browser does not support camera access.",
+              details: ["This device or browser does not support camera access."],
           });
           resolve(false);
           return;
@@ -88,7 +79,7 @@ export default function AdminScanPage() {
         setScanStatus({
           message: "Requesting camera access…",
           variant: "info",
-          detailHtml: "Please allow camera when your browser asks.",
+          details: ["Please allow camera when your browser asks."],
         });
         navigator.mediaDevices
           .getUserMedia({ video: true })
@@ -96,7 +87,7 @@ export default function AdminScanPage() {
             stream.getTracks().forEach((t) => t.stop());
             setPermissionState("granted");
             setPhase("scanning");
-            setScanStatus({ message: "Scanning…", variant: "info", detailHtml: "" });
+            setScanStatus({ message: "Scanning…", variant: "info", details: [] });
             resolve(true);
           })
           .catch((err) => {
@@ -105,8 +96,7 @@ export default function AdminScanPage() {
             setScanStatus({
               message: "Camera permission denied",
               variant: "error",
-              detailHtml:
-                "Allow camera in your browser settings for this site, then tap &quot;Allow camera&quot; again.",
+              details: ["Allow camera in your browser settings for this site, then tap Allow camera again."],
             });
             setPhase("permission");
             resolve(false);
@@ -132,7 +122,7 @@ export default function AdminScanPage() {
         setScanStatus({
           message: "Processing Ticket…",
           variant: "info",
-          detailHtml: "",
+          details: [],
         });
 
         const processTicket = async () => {
@@ -159,7 +149,7 @@ export default function AdminScanPage() {
             setScanStatus({
               message: "Invalid Ticket",
               variant: "error",
-              detailHtml: "QR does not contain a valid ticket URL or ID.",
+              details: ["QR does not contain a valid ticket URL or ID."],
             });
             setPhase("result");
             return;
@@ -172,58 +162,78 @@ export default function AdminScanPage() {
             setScanStatus({
               message: "Invalid Ticket",
               variant: "error",
-              detailHtml: "QR does not contain a valid ticket ID.",
+              details: ["QR does not contain a valid ticket ID."],
             });
             setPhase("result");
             return;
           }
 
-          const { data, error } = await supabase
-            .from("event_registrations")
-            .select("*")
-            .eq("ticket_id", ticketIdStr)
-            .single();
+          const res = await fetch("/api/admin/check-in", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Requested-With": "XMLHttpRequest",
+            },
+            credentials: "include",
+            body: JSON.stringify({ ticketId: ticketIdStr }),
+          });
+          const json = (await res.json()) as {
+            error?: string;
+            status?: "invalid" | "not_verified" | "already_used" | "approved";
+            ticketId?: string;
+            name?: string | null;
+          };
 
-          if (error || !data) {
+          if (res.status === 401) {
+            router.replace("/admin/login");
+            return;
+          }
+
+          if (res.status === 403) {
+            setScanStatus({
+              message: "Forbidden",
+              variant: "error",
+              details: ["Security check failed. Please refresh and try again."],
+            });
+            setPhase("result");
+            return;
+          }
+
+          if (!res.ok && json.status !== "invalid") {
             setScanStatus({
               message: "Invalid Ticket",
               variant: "error",
-              detailHtml: "No ticket found in the database.",
+              details: [json.error ?? "No ticket found in the database."],
             });
             setPhase("result");
             return;
           }
 
-          if (data.payment_status !== "verified") {
+          if (json.status === "invalid") {
             setScanStatus({
               message: "Invalid Ticket",
               variant: "error",
-              detailHtml: `Payment not verified for ticket <span class="font-mono">${escapeHtml(ticketIdStr)}</span>.`,
+              details: ["No ticket found in the database."],
             });
             setPhase("result");
             return;
           }
 
-          if (data.entry_status === "used") {
+          if (json.status === "not_verified") {
+            setScanStatus({
+              message: "Invalid Ticket",
+              variant: "error",
+              details: [`Payment not verified for ticket ${ticketIdStr}.`],
+            });
+            setPhase("result");
+            return;
+          }
+
+          if (json.status === "already_used") {
             setScanStatus({
               message: "Ticket Already Used",
               variant: "warning",
-              detailHtml: `Ticket ID: <span class="font-mono">${escapeHtml(ticketIdStr)}</span>`,
-            });
-            setPhase("result");
-            return;
-          }
-
-          const { error: updateError } = await supabase
-            .from("event_registrations")
-            .update({ entry_status: "used" })
-            .eq("ticket_id", ticketIdStr);
-
-          if (updateError) {
-            setScanStatus({
-              message: "Invalid Ticket",
-              variant: "error",
-              detailHtml: "Failed to mark checked-in. Please try again.",
+              details: [`Ticket ID: ${ticketIdStr}`],
             });
             setPhase("result");
             return;
@@ -232,7 +242,7 @@ export default function AdminScanPage() {
           setScanStatus({
             message: "Entry Approved",
             variant: "success",
-            detailHtml: `Ticket ID: <span class="font-mono">${escapeHtml(ticketIdStr)}</span><br/>Status: Valid Ticket`,
+            details: [`Ticket ID: ${ticketIdStr}`, "Status: Valid Ticket"],
           });
           setPhase("result");
         };
@@ -267,8 +277,7 @@ export default function AdminScanPage() {
             setScanStatus({
               message: "Camera access denied or unavailable",
               variant: "error",
-              detailHtml:
-                "Please allow camera permission in your browser settings or try another device.",
+              details: ["Please allow camera permission in your browser settings or try another device."],
             });
             setPhase("result");
           }
@@ -414,11 +423,12 @@ export default function AdminScanPage() {
             <p className="mt-2 text-sm font-medium text-slate-200">
               {scanStatus.message}
             </p>
-            {scanStatus.detailHtml && (
-              <div
-                className="mt-2 text-xs text-slate-400"
-                dangerouslySetInnerHTML={{ __html: scanStatus.detailHtml }}
-              />
+            {scanStatus.details.length > 0 && (
+              <div className="mt-2 space-y-1 text-xs text-slate-400">
+                {scanStatus.details.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
             )}
           </div>
 

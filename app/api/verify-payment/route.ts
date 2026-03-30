@@ -9,6 +9,7 @@ import { ROBOTICS_EVENT_CAPACITY } from "@/lib/event-config";
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from "@/lib/admin-session";
 import { checkRateLimit, getRegistrationRateLimitConfig } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/get-client-ip";
+import { isTrustedAdminPost } from "@/lib/csrf";
 
 const TICKET_PREFIX = "EVT-";
 
@@ -32,6 +33,10 @@ function fingerprintFromReq(req: NextRequest): string {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!isTrustedAdminPost(req)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const contentType = req.headers.get("content-type") ?? "";
     if (!contentType.toLowerCase().includes("application/json")) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
@@ -190,6 +195,25 @@ export async function POST(req: NextRequest) {
     }
 
     ticketId = updated.ticket_id;
+
+    // Best-effort guard against race oversubscription.
+    // If this verification pushed us over capacity, revert this one.
+    const { count: finalVerifiedCount } = await supabase
+      .from("event_registrations")
+      .select("*", { count: "exact", head: true })
+      .eq("payment_status", "verified");
+    if ((finalVerifiedCount ?? 0) > ROBOTICS_EVENT_CAPACITY) {
+      await supabase
+        .from("event_registrations")
+        .update({ payment_status: "pending", ticket_id: null, verified_at: null })
+        .eq("id", registrationId)
+        .eq("ticket_id", ticketId);
+
+      return NextResponse.json(
+        { error: "Event is full" },
+        { status: 409 }
+      );
+    }
 
     const emailResult = await sendTicketEmail({
       to: row.email,

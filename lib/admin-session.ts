@@ -5,13 +5,12 @@ const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
  * Secret used to sign the httpOnly admin cookie (server-only).
- * Order: dedicated secret → server password → legacy NEXT_PUBLIC_* (same value many projects use for login only).
+ * Order: dedicated secret -> server password.
  */
 function getSigningSecret(): string | null {
   const s =
     process.env.ADMIN_SESSION_SECRET?.trim() ||
-    process.env.ADMIN_PASSWORD?.trim() ||
-    process.env.NEXT_PUBLIC_ADMIN_PASSWORD?.trim();
+    process.env.ADMIN_PASSWORD?.trim();
   return s && s.length >= 8 ? s : null;
 }
 

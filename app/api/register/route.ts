@@ -138,14 +138,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Abuse prevention (duplicate submissions from same identity/IP):
-    // Block if the same UTR already exists, or if user recently submitted (pending/verified).
-    const now = Date.now();
-    const identityWindowMs = Math.max(
-      60_000,
-      Math.min(900_000, Number(process.env.REGISTRATION_DUPLICATE_WINDOW_MS ?? "600000")) // default 10 min
-    );
-    const cutoffIso = new Date(now - identityWindowMs).toISOString();
+    // Duplicate prevention:
+    // Enforce "one registration per email/phone" (ever), plus "UTR cannot be reused".
 
     // 1) UTR reuse
     const { data: utrExisting, error: utrErr } = await supabase
@@ -162,35 +156,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2) Recent email/phone submissions
-    const recentByEmail = await supabase
+    // 2) Email OR phone uniqueness (ever)
+    // Single query is faster and reduces race windows.
+    const existingIdentity = await supabase
       .from("event_registrations")
-      .select("id,payment_status")
-      .eq("email", validated.data.email)
-      .in("payment_status", ["pending", "verified"])
-      .gte("created_at", cutoffIso)
+      .select("id,email,phone")
+      .or(`email.eq.${validated.data.email},phone.eq.${validated.data.phone}`)
       .limit(1);
-    if (recentByEmail.error) {
-      console.error("[register] recent email check failed");
-    } else if (recentByEmail.data && recentByEmail.data.length > 0) {
+    if (existingIdentity.error) {
+      console.error("[register] identity uniqueness check failed");
+    } else if (existingIdentity.data && existingIdentity.data.length > 0) {
+      const row = existingIdentity.data[0];
+      const emailMatches = String(row.email ?? "").toLowerCase() === validated.data.email.toLowerCase();
+      const phoneMatches = String(row.phone ?? "") === validated.data.phone;
       return NextResponse.json(
-        { error: "We already received your registration. Please wait for verification." },
-        { status: 409, headers }
-      );
-    }
-
-    const recentByPhone = await supabase
-      .from("event_registrations")
-      .select("id,payment_status")
-      .eq("phone", validated.data.phone)
-      .in("payment_status", ["pending", "verified"])
-      .gte("created_at", cutoffIso)
-      .limit(1);
-    if (recentByPhone.error) {
-      console.error("[register] recent phone check failed");
-    } else if (recentByPhone.data && recentByPhone.data.length > 0) {
-      return NextResponse.json(
-        { error: "We already received your registration. Please wait for verification." },
+        {
+          error: emailMatches
+            ? "This email is already registered."
+            : phoneMatches
+              ? "This phone number is already registered."
+              : "This email or phone number is already registered.",
+        },
         { status: 409, headers }
       );
     }
@@ -235,7 +221,7 @@ export async function POST(req: NextRequest) {
       if (insertError.code === "23505") {
         return NextResponse.json(
           {
-            error: "We already received your registration. Please wait for verification.",
+            error: "This email or phone number is already registered.",
           },
           { status: 409, headers }
         );
