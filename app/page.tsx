@@ -26,6 +26,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [remainingSeats, setRemainingSeats] = useState<number | null>(null);
   const [showUpiQr, setShowUpiQr] = useState(false);
+  const [upiCopySuccess, setUpiCopySuccess] = useState(false);
   const submitGuardRef = useRef(false);
   /** Honeypot — must stay empty (bots often fill hidden fields). */
   const [websiteHp, setWebsiteHp] = useState("");
@@ -72,6 +73,16 @@ export default function Home() {
 
   function showStatus(message: string, variant: StatusVariant = "info") {
     setStatus({ message, variant });
+  }
+
+  async function handleCopyUpiId() {
+    try {
+      await navigator.clipboard.writeText(UPI_ID);
+      setUpiCopySuccess(true);
+      window.setTimeout(() => setUpiCopySuccess(false), 1800);
+    } catch {
+      showStatus("Could not copy UPI ID. Please copy it manually.", "error");
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -220,9 +231,22 @@ export default function Home() {
                 />
               </div>
             )}
-            <p className="mt-3 text-center font-mono text-sm text-slate-300 sm:mt-4">
-              {UPI_ID}
-            </p>
+            <div className="mt-3 flex items-center justify-center gap-2 sm:mt-4">
+              <p className="font-mono text-sm text-slate-300">{UPI_ID}</p>
+              <button
+                type="button"
+                onClick={handleCopyUpiId}
+                aria-label="Copy UPI ID"
+                title="Copy UPI ID"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-slate-800/60 text-slate-300 transition hover:bg-slate-700/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+            {upiCopySuccess && <p className="mt-1 text-center text-xs text-emerald-300">UPI ID copied</p>}
             <p className="mt-2 text-center text-xs text-slate-500">
               Amount: ₹{REGISTRATION_FEE}. After payment, copy your UTR / Transaction ID and enter it below
             </p>
@@ -413,7 +437,22 @@ export default function Home() {
                           }}
                         />
                       </div>
-                      <p className="mt-2 font-mono text-sm text-slate-300">{UPI_ID}</p>
+                      <div className="mt-2 flex items-center justify-center gap-2">
+                        <p className="font-mono text-sm text-slate-300">{UPI_ID}</p>
+                        <button
+                          type="button"
+                          onClick={handleCopyUpiId}
+                          aria-label="Copy UPI ID"
+                          title="Copy UPI ID"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-slate-800/60 text-slate-300 transition hover:bg-slate-700/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                        >
+                          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                            <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                          </svg>
+                        </button>
+                      </div>
+                      {upiCopySuccess && <p className="mt-1 text-xs text-emerald-300">UPI ID copied</p>}
                     </div>
                   )}
                 </div>
