@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       headers.set("Retry-After", String(retryAfter));
       console.warn("[register] cooldown_hit", { ip, fp });
       return NextResponse.json(
-        { error: "Please wait a moment before submitting again." },
+        { error: "Please wait a moment — you can submit again in 30 seconds." },
         { status: 429, headers }
       );
     }
