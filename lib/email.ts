@@ -11,15 +11,15 @@ const EMAIL_TEAM_SIGN_OFF = "Team XTS";
 //   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
 //   return "http://localhost:3000";
 // }
+
 function getPublicBaseUrl(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_BASE_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  // Server-side base URL for emails
+  if (process.env.EMAIL_BASE_URL) return process.env.EMAIL_BASE_URL.replace(/\/$/, "");
 
-  // Only fallback in dev
-  if (process.env.NODE_ENV !== "production" && process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
-  }
+  // Fallback to Vercel preview
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
 
+  // Local dev fallback
   return "http://localhost:3000";
 }
 
