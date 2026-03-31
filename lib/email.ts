@@ -5,10 +5,21 @@ import { ROBOTICS_EVENT_NAME } from "@/lib/event-config";
 /** Shown in ticket email sign-off (e.g. "— Team XTS"). */
 const EMAIL_TEAM_SIGN_OFF = "Team XTS";
 
+// function getPublicBaseUrl(): string {
+//   const fromEnv = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+//   if (fromEnv) return fromEnv.replace(/\/$/, "");
+//   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
+//   return "http://localhost:3000";
+// }
 function getPublicBaseUrl(): string {
   const fromEnv = process.env.NEXT_PUBLIC_BASE_URL?.trim();
   if (fromEnv) return fromEnv.replace(/\/$/, "");
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
+
+  // Only fallback in dev
+  if (process.env.NODE_ENV !== "production" && process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
+  }
+
   return "http://localhost:3000";
 }
 
