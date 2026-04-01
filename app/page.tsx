@@ -183,7 +183,7 @@ export default function Home() {
               {ROBOTICS_EVENT_NAME}
             </h1>
             <p className="mt-1 text-xs text-slate-400 sm:text-sm">
-              Explore the future of AI & Robotics · Register now to secure your entry            </p>
+            Explore the Future of AI & Robotics — Register Now to Secure Your Spot!          </p>
           </div>
           <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5">
             <img
