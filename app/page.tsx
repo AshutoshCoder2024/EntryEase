@@ -463,7 +463,7 @@ export default function Home() {
                     <span className="lg:hidden"> (click Show UPI QR above).</span>
                   </p>
                   <p className="mt-2 text-sm text-slate-300">
-                    2. After payment, you&apos;ll get a <strong className="text-slate-200">UTR / Transaction ID (UPI Reference Number)</strong>. Enter it below.
+                    2. After payment, you&apos;ll get a <strong className="text-slate-200">UTR or (UPI Reference Number)</strong>. Enter it below.
                   </p>
                 </div>
                 <div>
