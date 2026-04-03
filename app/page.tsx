@@ -270,7 +270,7 @@ export default function Home() {
                 <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-300">
                   Fee: ₹{REGISTRATION_FEE}
                 </span>
-                <p className="text-xs text-slate-500">{seatsLabel}</p>
+                {/* <p className="text-xs text-slate-500">{seatsLabel}</p> */}
               </div>
             </div>
 
