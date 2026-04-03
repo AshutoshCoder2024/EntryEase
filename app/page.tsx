@@ -248,7 +248,7 @@ export default function Home() {
             </div>
             {upiCopySuccess && <p className="mt-1 text-center text-xs text-emerald-300">UPI ID copied</p>}
             <p className="mt-2 text-center text-xs text-slate-500">
-              Amount: ₹{REGISTRATION_FEE}. After payment, copy your UTR / Transaction ID and enter it below
+              Amount: ₹{REGISTRATION_FEE}. After payment, copy your UTR Number and enter it below
             </p>
           </div>
           </section>
