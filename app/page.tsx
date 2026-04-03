@@ -468,7 +468,7 @@ export default function Home() {
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-300">
-                    UTR Number (Transaction ID) <span className="text-rose-400">*</span>
+                    UTR Number  <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="text"
