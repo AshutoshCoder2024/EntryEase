@@ -215,7 +215,7 @@ export default function Home() {
             {showUpiQr && (
               <div className="mt-4 flex justify-center rounded-2xl border border-white/10 bg-white p-4 shadow-soft sm:p-5">
                 <img
-                  src="/KaranQR.png"
+                  src="/NausheenOR.png"
                   alt="UPI Payment QR Code"
                   className="h-44 w-44 object-contain sm:h-48 sm:w-48"
                   onError={(e) => {
@@ -224,7 +224,7 @@ export default function Home() {
                     if (parent) {
                       const fallback = document.createElement("div");
                       fallback.className = "text-center text-xs text-slate-500 py-8";
-                      fallback.innerHTML = `Place your UPI QR at<br/><code class="text-slate-400">public/KaranQR.png</code><br/><br/>Or pay to: ${UPI_ID}`;
+                      fallback.innerHTML = `Place your UPI QR at<br/><code class="text-slate-400">public/NausheenOR.png</code><br/><br/>Or pay to: ${UPI_ID}`;
                       parent.appendChild(fallback);
                     }
                   }}
@@ -422,7 +422,7 @@ export default function Home() {
                       <p className="mb-3 text-center text-xs text-slate-400">Scan to pay</p>
                       <div className="flex justify-center rounded-xl border border-white/10 bg-white p-3">
                         <img
-                          src="/KaranQR.png"
+                          src="/NausheenOR.png"
                           alt="UPI Payment QR Code"
                           className="h-40 w-40 object-contain"
                           onError={(e) => {

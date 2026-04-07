@@ -10,7 +10,7 @@ export {
 } from "./event-config";
 
 /** Your UPI ID for payments (e.g. yourname@paytm / phonepe). Displayed on registration page. */
-export const UPI_ID = "kk1892058@oksbi"; // TODO: replace with your UPI ID
+export const UPI_ID = "jilaninausheen13@okicici"; // TODO: replace with your UPI ID
 
 /** Support contact shown on the registration page (Need Help section). */
 export const SUPPORT_CONTACT_NAME = "Event Support";
