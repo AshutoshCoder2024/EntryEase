@@ -215,7 +215,7 @@ export default function Home() {
             {showUpiQr && (
               <div className="mt-4 flex justify-center rounded-2xl border border-white/10 bg-white p-4 shadow-soft sm:p-5">
                 <img
-                  src="/upiqr1.png"
+                  src="/KaranQR.png"
                   alt="UPI Payment QR Code"
                   className="h-44 w-44 object-contain sm:h-48 sm:w-48"
                   onError={(e) => {
